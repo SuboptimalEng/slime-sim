@@ -1,2 +1,2 @@
-# slime-sim
+# Slime Sim
 Simulating slime.
