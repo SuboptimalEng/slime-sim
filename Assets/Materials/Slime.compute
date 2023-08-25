@@ -1,6 +1,7 @@
 #pragma kernel CSMain
 
 RWTexture2D<float4> ResultTexture; // Use RWTexture2D for UAV access
+float time;
 
 float SDCircle(float2 p, float r) {
     return length(p) - r;
@@ -40,16 +41,33 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     //     ResultTexture[id.xy] = float4(1.0, 0.0, 0.0, 1.0); // Red circle
     // }
 
+    // note: this makes the render texture need to be cleared each time
+    // uint2 dimensions;
+    // ResultTexture.GetDimensions(dimensions.x, dimensions.y);
+    // float radius = 0.25;
+    // float2 uv = float2(id.xy) / float2(dimensions);
+    // uv = uv - 0.5;
+    // uv = uv * float2(dimensions) / 50;
+    // float2 center = float2(sin(time), cos(time));
+    // float dist = SDCircle(uv - center, radius);
+    // if (dist <= 0) {
+    //     ResultTexture[id.xy] = float4(1.0, 0.0, 0.0, 1.0); // Red circle
+    // }
+
+    // note: here we reset the background color to black every time
     uint2 dimensions;
     ResultTexture.GetDimensions(dimensions.x, dimensions.y);
     // float radius = min(dimensions.x, dimensions.y) * 0.4;
-    float radius = 1;
+    float radius = 0.25;
     float2 uv = float2(id.xy) / float2(dimensions);
     uv = uv - 0.5;
-    uv = uv * float2(dimensions) / 100;
-    float dist = SDCircle(uv, radius);
-    if (dist <= 0)
-    {
-        ResultTexture[id.xy] = float4(1.0, 0.0, 0.0, 1.0); // Red circle
-    }
+    uv = uv * float2(dimensions) / 50;
+
+    float2 center = float2(sin(time), cos(time));
+    float dist = SDCircle(uv - center, radius);
+
+    float3 red = float3(1.0, 0.0, 0.0);
+    float3 black = float3(0.0, 0.0, 0.0);
+    float3 color = dist <= 0 ? red : black;
+    ResultTexture[id.xy] = float4(color, 1.0); // Red circle
 }
