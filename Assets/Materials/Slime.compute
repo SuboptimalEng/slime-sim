@@ -1,0 +1,55 @@
+#pragma kernel CSMain
+
+RWTexture2D<float4> ResultTexture; // Use RWTexture2D for UAV access
+
+float SDCircle(float2 p, float r) {
+    return length(p) - r;
+}
+
+[numthreads(8, 8, 1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // Result[id.xy] = float4(1, 0, 0, 1);
+
+    // Define the line parameters
+    // float2 startPoint = float2(0.5, 0.5);
+    // float2 endPoint = float2(0.6, 0.5);
+    // float lineWidth = 0.02;
+    // float4 lineColor = float4(1.0, 0.0, 0.0, 1.0); // Red color
+    // uint2 dimensions;
+    // Result.GetDimensions(dimensions.x, dimensions.y);
+    // // Calculate distance from the line
+    // float2 dir = normalize(endPoint - startPoint);
+    // float2 diff = id.xy / float2(dimensions) - startPoint;
+    // float dist = abs(dot(dir, diff)) - lineWidth * 0.5;
+    // // Draw the line
+    // if (abs(dist) < lineWidth * 0.5)
+    // {
+    //     Result[id.xy] = lineColor;
+    // }
+
+    // uint2 dimensions;
+    // ResultTexture.GetDimensions(dimensions.x, dimensions.y);
+    // float2 center = float2(dimensions) * 0.5;
+    // float radius = min(dimensions.x, dimensions.y) * 0.4;
+    // float2 diff = center - uv * float2(dimensions);
+    // float dist = length(diff);
+    // float dist = SDCircle(center - uv * float2(dimensions), radius);
+    // if (dist <= radius)
+    // {
+    //     ResultTexture[id.xy] = float4(1.0, 0.0, 0.0, 1.0); // Red circle
+    // }
+
+    uint2 dimensions;
+    ResultTexture.GetDimensions(dimensions.x, dimensions.y);
+    // float radius = min(dimensions.x, dimensions.y) * 0.4;
+    float radius = 1;
+    float2 uv = float2(id.xy) / float2(dimensions);
+    uv = uv - 0.5;
+    uv = uv * float2(dimensions) / 100;
+    float dist = SDCircle(uv, radius);
+    if (dist <= 0)
+    {
+        ResultTexture[id.xy] = float4(1.0, 0.0, 0.0, 1.0); // Red circle
+    }
+}
