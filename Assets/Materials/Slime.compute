@@ -79,16 +79,24 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     uint2 dimensions;
     ResultTexture.GetDimensions(dimensions.x, dimensions.y);
     // float radius = min(dimensions.x, dimensions.y) * 0.4;
-    float radius = 0.1;
+    float radius = 0.01;
     float2 uv = float2(id.xy) / float2(dimensions);
-    uv = uv - 0.5;
-    uv = uv * float2(dimensions) / 50;
+    uv = 2.0 * (uv - 0.5);
+    // uv = uv * float2(dimensions) / 50;
 
     float3 red = float3(1.0, 0.0, 0.0);
     float3 black = float3(0.0, 0.0, 0.0);
     float3 color = black;
     for (int i = 0; i < 10; i++) {
-        float2 pos = agents[i].position + 0.0001 * agents[i].direction * sin(time);
+        float2 pos = agents[i].position + 0.00001 * agents[i].direction * time;
+
+
+        if (pos.x < -1 || pos.x > 1) {
+            agents[i].direction.x *= -1;
+        }
+        if (pos.y < -1 || pos.y > 1) {
+            agents[i].direction.y *= -1;
+        }
 
         float dist = SDCircle(uv - pos, radius);
 
@@ -98,5 +106,9 @@ void CSMain (uint3 id : SV_DispatchThreadID)
         // float dist = SDCircle(uv, radius);
         color = dist <= 0 ? red : color;
     }
+
+    // color = float3(randX);
+    // color = float3(uv, 0);
+
     ResultTexture[id.xy] = float4(color, 1.0); // Red circle
 }
