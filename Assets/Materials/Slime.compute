@@ -1,5 +1,11 @@
 #pragma kernel CSMain
 
+struct Agent {
+    float2 position;
+    float2 direction;
+};
+
+RWStructuredBuffer<Agent> agents;
 RWTexture2D<float4> ResultTexture; // Use RWTexture2D for UAV access
 float time;
 
@@ -54,20 +60,43 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     //     ResultTexture[id.xy] = float4(1.0, 0.0, 0.0, 1.0); // Red circle
     // }
 
+    // // note: here we reset the background color to black every time
+    // uint2 dimensions;
+    // ResultTexture.GetDimensions(dimensions.x, dimensions.y);
+    // // float radius = min(dimensions.x, dimensions.y) * 0.4;
+    // float radius = 0.25;
+    // float2 uv = float2(id.xy) / float2(dimensions);
+    // uv = uv - 0.5;
+    // uv = uv * float2(dimensions) / 50;
+    // float2 center = float2(sin(time), cos(time));
+    // float dist = SDCircle(uv - center, radius);
+    // float3 red = float3(1.0, 0.0, 0.0);
+    // float3 black = float3(0.0, 0.0, 0.0);
+    // float3 color = dist <= 0 ? red : black;
+    // ResultTexture[id.xy] = float4(color, 1.0); // Red circle
+
     // note: here we reset the background color to black every time
     uint2 dimensions;
     ResultTexture.GetDimensions(dimensions.x, dimensions.y);
     // float radius = min(dimensions.x, dimensions.y) * 0.4;
-    float radius = 0.25;
+    float radius = 0.1;
     float2 uv = float2(id.xy) / float2(dimensions);
     uv = uv - 0.5;
     uv = uv * float2(dimensions) / 50;
 
-    float2 center = float2(sin(time), cos(time));
-    float dist = SDCircle(uv - center, radius);
-
     float3 red = float3(1.0, 0.0, 0.0);
     float3 black = float3(0.0, 0.0, 0.0);
-    float3 color = dist <= 0 ? red : black;
+    float3 color = black;
+    for (int i = 0; i < 10; i++) {
+        float2 pos = agents[i].position + 0.0001 * agents[i].direction * sin(time);
+
+        float dist = SDCircle(uv - pos, radius);
+
+        // set position
+        agents[i].position = pos;
+
+        // float dist = SDCircle(uv, radius);
+        color = dist <= 0 ? red : color;
+    }
     ResultTexture[id.xy] = float4(color, 1.0); // Red circle
 }
