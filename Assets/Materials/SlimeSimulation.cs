@@ -19,6 +19,7 @@ public class SlimeSimulation : MonoBehaviour
 
     Agent[] agents;
     int numberOfAgents;
+    ComputeBuffer agentsBuffer;
     RenderTexture renderTexture;
 
     void Start()
@@ -34,7 +35,7 @@ public class SlimeSimulation : MonoBehaviour
         renderTexture.enableRandomWrite = true; // Enable UAV access
         renderTexture.Create();
 
-        numberOfAgents = 10;
+        numberOfAgents = 8;
         agents = new Agent[numberOfAgents];
         for (int i = 0; i < numberOfAgents; i++)
         {
@@ -43,6 +44,8 @@ public class SlimeSimulation : MonoBehaviour
             agents[i].direction = Random.insideUnitCircle.normalized;
             // Debug.Log(agents[i].position);
         }
+
+        agentsBuffer = new ComputeBuffer(numberOfAgents, Agent.Size);
     }
 
     void Update()
@@ -50,23 +53,28 @@ public class SlimeSimulation : MonoBehaviour
         // note: do I need to do this?
         renderTexture.DiscardContents();
 
-        int kernelHandle = computeShader.FindKernel("CSMain");
+        int kernelHandle = computeShader.FindKernel("CSMainNew");
 
-        ComputeBuffer agentsBuffer = new ComputeBuffer(numberOfAgents, Agent.Size);
         agentsBuffer.SetData(agents);
+
         computeShader.SetBuffer(kernelHandle, "agents", agentsBuffer);
 
         computeShader.SetTexture(kernelHandle, "ResultTexture", renderTexture);
 
-        computeShader.SetFloat("time", Time.time);
+        computeShader.SetFloat("deltaTime", Time.deltaTime);
+
         computeShader.Dispatch(kernelHandle, renderTexture.width / 8, renderTexture.height / 8, 1);
+        // computeShader.Dispatch(kernelHandle, 8, 8, 1);
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.material.mainTexture = renderTexture;
 
         // before releasing the data, update
         agentsBuffer.GetData(agents);
+    }
 
+    void OnDestroy()
+    {
         agentsBuffer.Release();
     }
 }

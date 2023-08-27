@@ -1,4 +1,4 @@
-#pragma kernel CSMain
+#pragma kernel CSMainOld
 
 struct Agent {
     float2 position;
@@ -7,16 +7,16 @@ struct Agent {
 
 RWStructuredBuffer<Agent> agents;
 RWTexture2D<float4> ResultTexture; // Use RWTexture2D for UAV access
-float time;
+float deltaTime;
 
 float SDCircle(float2 p, float r) {
     return length(p) - r;
 }
 
 [numthreads(8, 8, 1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+void CSMainOld (uint3 id : SV_DispatchThreadID)
 {
-    // Result[id.xy] = float4(1, 0, 0, 1);
+    // ResultTexture[id.xy] = float4(1, 0, 0, 1);
 
     // Define the line parameters
     // float2 startPoint = float2(0.5, 0.5);
@@ -24,7 +24,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // float lineWidth = 0.02;
     // float4 lineColor = float4(1.0, 0.0, 0.0, 1.0); // Red color
     // uint2 dimensions;
-    // Result.GetDimensions(dimensions.x, dimensions.y);
+    // ResultTexture.GetDimensions(dimensions.x, dimensions.y);
     // // Calculate distance from the line
     // float2 dir = normalize(endPoint - startPoint);
     // float2 diff = id.xy / float2(dimensions) - startPoint;
@@ -32,7 +32,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // // Draw the line
     // if (abs(dist) < lineWidth * 0.5)
     // {
-    //     Result[id.xy] = lineColor;
+    //     ResultTexture[id.xy] = lineColor;
     // }
 
     // uint2 dimensions;
@@ -54,7 +54,7 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     // float2 uv = float2(id.xy) / float2(dimensions);
     // uv = uv - 0.5;
     // uv = uv * float2(dimensions) / 50;
-    // float2 center = float2(sin(time), cos(time));
+    // float2 center = float2(sin(deltaTime), cos(deltaTime));
     // float dist = SDCircle(uv - center, radius);
     // if (dist <= 0) {
     //     ResultTexture[id.xy] = float4(1.0, 0.0, 0.0, 1.0); // Red circle
@@ -79,17 +79,16 @@ void CSMain (uint3 id : SV_DispatchThreadID)
     uint2 dimensions;
     ResultTexture.GetDimensions(dimensions.x, dimensions.y);
     // float radius = min(dimensions.x, dimensions.y) * 0.4;
-    float radius = 0.01;
+    float radius = 0.025;
     float2 uv = float2(id.xy) / float2(dimensions);
     uv = 2.0 * (uv - 0.5);
-    // uv = uv * float2(dimensions) / 50;
+    uv = uv * float2(dimensions) / 500;
 
     float3 red = float3(1.0, 0.0, 0.0);
     float3 black = float3(0.0, 0.0, 0.0);
     float3 color = black;
     for (int i = 0; i < 10; i++) {
-        float2 pos = agents[i].position + 0.00001 * agents[i].direction * time;
-
+        float2 pos = agents[i].position + 0.01 * agents[i].direction * deltaTime;
 
         if (pos.x < -1 || pos.x > 1) {
             agents[i].direction.x *= -1;
