@@ -29,9 +29,8 @@ public class SlimeSimulation : MonoBehaviour
 
     Agent[] agents;
     ComputeBuffer agentsBuffer;
-    RenderTexture renderTexture;
-
-    int kernelHandle;
+    RenderTexture resultTexture;
+    RenderTexture trailMapTexture;
 
     void Start()
     {
@@ -40,11 +39,14 @@ public class SlimeSimulation : MonoBehaviour
         RenderTextureFormat format = RenderTextureFormat.ARGB32;
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
 
-        // create the render texture
-        renderTexture = new RenderTexture(width, height, depth, format, readWrite);
-        // enable UAV access
-        renderTexture.enableRandomWrite = true;
-        renderTexture.Create();
+        // create the result texture and enable UAV access
+        resultTexture = new RenderTexture(width, height, depth, format, readWrite);
+        resultTexture.enableRandomWrite = true;
+        resultTexture.Create();
+
+        trailMapTexture = new RenderTexture(width, height, depth, format, readWrite);
+        trailMapTexture.enableRandomWrite = true;
+        trailMapTexture.Create();
 
         // set up a few agents to simulate
         agents = new Agent[numOfAgents];
@@ -56,27 +58,32 @@ public class SlimeSimulation : MonoBehaviour
 
         // set up agentsBuffer to be the correct size
         agentsBuffer = new ComputeBuffer(numOfAgents, Agent.Size);
-
-        kernelHandle = computeShader.FindKernel("CSMainNew");
     }
 
     void Update()
     {
         // note: do I need to do this?
-        // renderTexture.DiscardContents();
+        // resultTexture.DiscardContents();
 
         // set the "agents buffer" array with the latest position + direction data from "agents"
         agentsBuffer.SetData(agents);
 
+        int kernelHandle1 = computeShader.FindKernel("CSMainNew");
         computeShader.SetInt("numOfAgents", numOfAgents);
+        // todo: maybe used time.fixedDeltaTime?
         computeShader.SetFloat("deltaTime", Time.deltaTime);
-        computeShader.SetBuffer(kernelHandle, "agents", agentsBuffer);
-        computeShader.SetTexture(kernelHandle, "ResultTexture", renderTexture);
+        computeShader.SetBuffer(kernelHandle1, "agents", agentsBuffer);
+        computeShader.SetTexture(kernelHandle1, "ResultTexture", resultTexture);
+        computeShader.Dispatch(kernelHandle1, resultTexture.width / 8, resultTexture.height / 8, 1);
 
-        computeShader.Dispatch(kernelHandle, renderTexture.width / 8, renderTexture.height / 8, 1);
+        int kernelHandle2 = computeShader.FindKernel("CSTrailMap");
+        computeShader.SetTexture(kernelHandle2, "ResultTexture", resultTexture);
+        computeShader.SetTexture(kernelHandle2, "TrailMapTexture", trailMapTexture);
+        computeShader.Dispatch(kernelHandle2, resultTexture.width / 8, resultTexture.height, 1);
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
-        meshRenderer.material.mainTexture = renderTexture;
+        // meshRenderer.material.mainTexture = resultTexture;
+        meshRenderer.material.mainTexture = trailMapTexture;
 
         // update the "agents" array with the positions + directions from the compute shader
         agentsBuffer.GetData(agents);

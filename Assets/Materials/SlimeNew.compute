@@ -61,3 +61,27 @@ void CSMainNew (uint3 id : SV_DispatchThreadID)
 
     ResultTexture[id.xy] = float4(color, 1.0);
 }
+
+#pragma kernel CSTrailMap
+
+// declaring this results in error because it was declared before
+// RWTexture2D<float4> ResultTexture;
+RWTexture2D<float4> TrailMapTexture;
+
+[numthreads(8, 8, 1)]
+void CSTrailMap(uint3 id : SV_DispatchThreadID)
+{
+    float4 trailMapColor = TrailMapTexture[id.xy];
+
+    // todo: check if this is first undefined (looks like it's not)
+
+    // note: lower the trail map color slightly on each iteration
+    // trailMapColor.x = trailMapColor.x - 0.01 < 0 ? 0 : trailMapColor.x - 0.01;
+    trailMapColor.x = max(0, trailMapColor.x - 0.01);
+
+    // note: if the resultTexture is set to 1, then set trailMapColor to 1 as well
+    // trailMapColor.x = ResultTexture[id.xy].x > 0.99 ? 1 : trailMapColor.x;
+    trailMapColor.x = max(ResultTexture[id.xy].x, trailMapColor.x);
+
+    TrailMapTexture[id.xy] = trailMapColor;
+}
