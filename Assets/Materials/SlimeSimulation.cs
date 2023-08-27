@@ -63,7 +63,14 @@ public class SlimeSimulation : MonoBehaviour
 
         computeShader.SetFloat("deltaTime", Time.deltaTime);
 
-        computeShader.Dispatch(kernelHandle, renderTexture.width / 8, renderTexture.height / 8, 1);
+        int numOfThreadsX = 8;
+        int numOfThreadsY = 8;
+        computeShader.Dispatch(
+            kernelHandle,
+            renderTexture.width / numOfThreadsX,
+            renderTexture.height / numOfThreadsY,
+            1
+        );
         // computeShader.Dispatch(kernelHandle, 8, 8, 1);
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
