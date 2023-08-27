@@ -17,66 +17,68 @@ public class SlimeSimulation : MonoBehaviour
 {
     public ComputeShader computeShader;
 
+    // define render texture dimensions
+    [Range(128, 512)]
+    public int width;
+
+    [Range(128, 512)]
+    public int height;
+
+    [Range(8, 64)]
+    public int numOfAgents;
+
     Agent[] agents;
-    int numberOfAgents;
     ComputeBuffer agentsBuffer;
     RenderTexture renderTexture;
 
+    int kernelHandle;
+
     void Start()
     {
-        // Define Render Texture dimensions and other settings
-        int width = 512;
-        int height = 512;
+        // set depth to 0 for 2D textures
+        int depth = 0;
         RenderTextureFormat format = RenderTextureFormat.ARGB32;
-        int depth = 0; // Set to 0 for 2D textures
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
-        // Create the Render Texture
+
+        // create the render texture
         renderTexture = new RenderTexture(width, height, depth, format, readWrite);
-        renderTexture.enableRandomWrite = true; // Enable UAV access
+        // enable UAV access
+        renderTexture.enableRandomWrite = true;
         renderTexture.Create();
 
-        numberOfAgents = 8;
-        agents = new Agent[numberOfAgents];
-        for (int i = 0; i < numberOfAgents; i++)
+        // set up a few agents to simulate
+        agents = new Agent[numOfAgents];
+        for (int i = 0; i < numOfAgents; i++)
         {
             agents[i].position = Vector2.zero;
-            // agents[i].position = Random.insideUnitCircle.normalized;
             agents[i].direction = Random.insideUnitCircle.normalized;
-            // Debug.Log(agents[i].position);
         }
 
-        agentsBuffer = new ComputeBuffer(numberOfAgents, Agent.Size);
+        // set up agentsBuffer to be the correct size
+        agentsBuffer = new ComputeBuffer(numOfAgents, Agent.Size);
+
+        kernelHandle = computeShader.FindKernel("CSMainNew");
     }
 
     void Update()
     {
         // note: do I need to do this?
-        renderTexture.DiscardContents();
+        // renderTexture.DiscardContents();
 
-        int kernelHandle = computeShader.FindKernel("CSMainNew");
-
+        // set the "agents buffer" array with the latest position + direction data from "agents"
         agentsBuffer.SetData(agents);
 
+        computeShader.SetInt("numOfAgents", numOfAgents);
+        computeShader.SetFloat("deltaTime", Time.deltaTime);
         computeShader.SetBuffer(kernelHandle, "agents", agentsBuffer);
-
         computeShader.SetTexture(kernelHandle, "ResultTexture", renderTexture);
 
-        computeShader.SetFloat("deltaTime", Time.deltaTime);
-
-        int numOfThreadsX = 8;
-        int numOfThreadsY = 8;
-        computeShader.Dispatch(
-            kernelHandle,
-            renderTexture.width / numOfThreadsX,
-            renderTexture.height / numOfThreadsY,
-            1
-        );
-        // computeShader.Dispatch(kernelHandle, 8, 8, 1);
+        computeShader.Dispatch(kernelHandle, renderTexture.width / 8, renderTexture.height / 8, 1);
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
         meshRenderer.material.mainTexture = renderTexture;
 
-        // before releasing the data, update
+        // update the "agents" array with the positions + directions from the compute shader
         agentsBuffer.GetData(agents);
     }
 

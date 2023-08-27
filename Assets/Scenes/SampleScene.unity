@@ -517,3 +517,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 02abb0d27b9a84ab48dda2e136b5a48b, type: 3}
+  width: 512
+  height: 512
+  numOfAgents: 64

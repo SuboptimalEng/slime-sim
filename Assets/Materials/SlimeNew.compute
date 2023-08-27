@@ -5,11 +5,12 @@ struct Agent {
     float2 direction;
 };
 
-RWStructuredBuffer<Agent> agents;
-RWTexture2D<float4> ResultTexture; // Use RWTexture2D for UAV access
+int numOfAgents;
 float deltaTime;
+RWStructuredBuffer<Agent> agents;
+RWTexture2D<float4> ResultTexture; // use RWTexture2D for UAV access
 
-float SDCircle(float2 p, float r) {
+float sdfCircle(float2 p, float r) {
     return length(p) - r;
 }
 
@@ -29,9 +30,8 @@ void CSMainNew (uint3 id : SV_DispatchThreadID)
     uint2 dimensions;
     ResultTexture.GetDimensions(dimensions.x, dimensions.y);
 
-
     // float radius = min(dimensions.x, dimensions.y) * 0.4;
-    float radius = 0.025;
+    float radius = 0.02;
     float2 uv = float2(id.xy) / float2(dimensions);
     uv = 2.0 * (uv - 0.5);
     uv = uv * float2(dimensions) / 500;
@@ -40,8 +40,8 @@ void CSMainNew (uint3 id : SV_DispatchThreadID)
     float3 black = float3(0.0, 0.0, 0.0);
     float3 color = black;
 
-    for (int i = 0; i < 10; i++) {
-        float2 pos = agents[i].position + 0.01 * agents[i].direction * deltaTime;
+    for (int i = 0; i < numOfAgents; i++) {
+        float2 pos = agents[i].position + 0.005 * agents[i].direction * deltaTime;
 
         if (pos.x < -1 || pos.x > 1) {
             agents[i].direction.x *= -1;
@@ -50,17 +50,14 @@ void CSMainNew (uint3 id : SV_DispatchThreadID)
             agents[i].direction.y *= -1;
         }
 
-        float dist = SDCircle(uv - pos, radius);
+        float dist = sdfCircle(uv - pos, radius);
 
         // set position
         agents[i].position = pos;
 
-        // float dist = SDCircle(uv, radius);
+        // float dist = sdfCircle(uv, radius);
         color = dist <= 0 ? red : color;
     }
 
-    // color = float3(randX);
-    // color = float3(uv, 0);
-
-    ResultTexture[id.xy] = float4(color, 1.0); // Red circle
+    ResultTexture[id.xy] = float4(color, 1.0);
 }
