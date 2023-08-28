@@ -31,6 +31,7 @@ public class SlimeSimulation : MonoBehaviour
     ComputeBuffer agentsBuffer;
     RenderTexture resultTexture;
     RenderTexture trailMapTexture;
+    RenderTexture diffusedTrailMapTexture;
 
     void Start()
     {
@@ -47,6 +48,10 @@ public class SlimeSimulation : MonoBehaviour
         trailMapTexture = new RenderTexture(width, height, depth, format, readWrite);
         trailMapTexture.enableRandomWrite = true;
         trailMapTexture.Create();
+
+        diffusedTrailMapTexture = new RenderTexture(width, height, depth, format, readWrite);
+        diffusedTrailMapTexture.enableRandomWrite = true;
+        diffusedTrailMapTexture.Create();
 
         // set up a few agents to simulate
         agents = new Agent[numOfAgents];
@@ -79,11 +84,33 @@ public class SlimeSimulation : MonoBehaviour
         int kernelHandle2 = computeShader.FindKernel("CSTrailMap");
         computeShader.SetTexture(kernelHandle2, "ResultTexture", resultTexture);
         computeShader.SetTexture(kernelHandle2, "TrailMapTexture", trailMapTexture);
-        computeShader.Dispatch(kernelHandle2, resultTexture.width / 8, resultTexture.height, 1);
+        computeShader.Dispatch(
+            kernelHandle2,
+            trailMapTexture.width / 8,
+            trailMapTexture.height / 8,
+            1
+        );
+
+        int kernelHandle3 = computeShader.FindKernel("CSDiffuse");
+        computeShader.SetInt("width", width);
+        computeShader.SetInt("height", height);
+        computeShader.SetTexture(kernelHandle3, "ResultTexture", resultTexture);
+        computeShader.SetTexture(kernelHandle3, "TrailMapTexture", trailMapTexture);
+        computeShader.SetTexture(kernelHandle3, "DiffusedTrailMapTexture", diffusedTrailMapTexture);
+        computeShader.Dispatch(
+            kernelHandle3,
+            diffusedTrailMapTexture.width / 8,
+            diffusedTrailMapTexture.height / 8,
+            1
+        );
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
         // meshRenderer.material.mainTexture = resultTexture;
-        meshRenderer.material.mainTexture = trailMapTexture;
+        // meshRenderer.material.mainTexture = trailMapTexture;
+        meshRenderer.material.mainTexture = diffusedTrailMapTexture;
+
+        // ComputeHelper.CopyRenderTexture(diffusedTrailMap, trailMap);
+        Graphics.Blit(diffusedTrailMapTexture, trailMapTexture);
 
         // update the "agents" array with the positions + directions from the compute shader
         agentsBuffer.GetData(agents);
