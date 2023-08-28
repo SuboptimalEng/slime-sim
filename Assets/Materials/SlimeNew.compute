@@ -110,20 +110,16 @@ void CSDiffuse(uint3 id : SV_DispatchThreadID)
 		}
 	}
 
-    // float4 blurResult = sum / 9;
-    // DiffusedTrailMapTexture[id.xy] = blurResult;
-
-    float diffuseRate = 0.99;
+    float diffuseRate = 0.5;
 	float4 blurredColor = sum / 9;
-	// float4 blurredColor = sum;
     float4 originalColor = TrailMapTexture[id.xy];
-	float diffuseWeight = saturate(diffuseRate * deltaTime);
+	// float diffuseWeight = saturate(diffuseRate * deltaTime);
 	// blurredColor = originalColor * (1 - diffuseWeight) + blurredColor * (diffuseWeight);
 	blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
-	// blurredColor = originalColor * (1 - 0.01) + blurredColor;
+	// blurredColor = originalColor * (1 - 0.9) + blurredColor;
 
-    float decayRate = 0.01;
-	DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - decayRate * deltaTime);
+    float decayRate = 0.001;
+	// DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - decayRate * deltaTime);
 	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor - decayRate * deltaTime);
-	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
+	DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
 }

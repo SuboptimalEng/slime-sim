@@ -73,15 +73,18 @@ public class SlimeSimulation : MonoBehaviour
         // set the "agents buffer" array with the latest position + direction data from "agents"
         agentsBuffer.SetData(agents);
 
-        int kernelHandle1 = computeShader.FindKernel("CSMainNew");
-        computeShader.SetInt("numOfAgents", numOfAgents);
-        // todo: maybe used time.fixedDeltaTime?
+        // todo: maybe used time.fixedDeltaTime? what's the difference anyway?
         computeShader.SetFloat("deltaTime", Time.deltaTime);
+        computeShader.SetInt("numOfAgents", numOfAgents);
+
+        int kernelHandle1 = computeShader.FindKernel("CSMainNew");
         computeShader.SetBuffer(kernelHandle1, "agents", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "ResultTexture", resultTexture);
         computeShader.Dispatch(kernelHandle1, resultTexture.width / 8, resultTexture.height / 8, 1);
 
         int kernelHandle2 = computeShader.FindKernel("CSTrailMap");
+        // todo: figure out why we need to set the resultTexture again even though
+        // we don't need to create the variable for #pragma kernel CSTrailMap
         computeShader.SetTexture(kernelHandle2, "ResultTexture", resultTexture);
         computeShader.SetTexture(kernelHandle2, "TrailMapTexture", trailMapTexture);
         computeShader.Dispatch(
@@ -109,7 +112,8 @@ public class SlimeSimulation : MonoBehaviour
         // meshRenderer.material.mainTexture = trailMapTexture;
         meshRenderer.material.mainTexture = diffusedTrailMapTexture;
 
-        // ComputeHelper.CopyRenderTexture(diffusedTrailMap, trailMap);
+        // copy diffusedTrailMapTexture into trailMapTexture so that the trailMap
+        // can decrement the values in the blurred sections of the trail
         Graphics.Blit(diffusedTrailMapTexture, trailMapTexture);
 
         // update the "agents" array with the positions + directions from the compute shader
