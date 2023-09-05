@@ -109,9 +109,8 @@ RWTexture2D<float4> TrailMapTexture;
 [numthreads(8, 8, 1)]
 void CSTrailMap(uint3 id : SV_DispatchThreadID)
 {
-    float4 trailMapColor = TrailMapTexture[id.xy];
-
     // todo: check if this is first undefined on the first run (looks like it's not)
+    float4 trailMapColor = TrailMapTexture[id.xy];
 
     // note: doing this first makes more sense (kinda)
     // lower the trail map color slightly on each loop to add a "fading" effect
