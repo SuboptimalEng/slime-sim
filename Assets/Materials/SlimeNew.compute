@@ -54,24 +54,22 @@ struct Agent {
     float2 direction;
 };
 
-int numOfAgents;
+float speed;
 float deltaTime;
+float numOfAgents;
+
 RWStructuredBuffer<Agent> AgentsBuffer;
 RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
-
-float sdfCircle(float2 p, float r) {
-    return length(p) - r;
-}
+RWTexture2D<float4> TrailMapTexture; // use RWTexture2D for UAV access
 
 [numthreads(16, 1, 1)]
 void CSPositionMap(uint3 id : SV_DispatchThreadID)
 {
     // note: prevents undefined behavior that draws agents at the texture map center
-    if (int(id.x) >= numOfAgents) {
+    if (id.x >= numOfAgents) {
         return;
     }
 
-    float speed = 100;
     float2 pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
 
     uint2 dimensions;
@@ -101,10 +99,9 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
 }
 
 #pragma kernel CSTrailMap
-RWTexture2D<float4> TrailMapTexture;
-
 // note: declaring this again causes an error because it was declared before
 // RWTexture2D<float4> PositionTexture;
+// RWTexture2D<float4> TrailMapTexture;
 
 [numthreads(8, 8, 1)]
 void CSTrailMap(uint3 id : SV_DispatchThreadID)
@@ -128,6 +125,7 @@ void CSTrailMap(uint3 id : SV_DispatchThreadID)
 RWTexture2D<float4> DiffusedTrailMapTexture;
 int width;
 int height;
+float diffuseRate;
 
 [numthreads(8, 8, 1)]
 void CSDiffuse(uint3 id : SV_DispatchThreadID)
@@ -144,16 +142,16 @@ void CSDiffuse(uint3 id : SV_DispatchThreadID)
 		}
 	}
 
-    float diffuseRate = 0.5;
 	float4 blurredColor = sum / 9;
     float4 originalColor = TrailMapTexture[id.xy];
 	// float diffuseWeight = saturate(diffuseRate * deltaTime);
 	// blurredColor = originalColor * (1 - diffuseWeight) + blurredColor * (diffuseWeight);
-	// blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
-	blurredColor = originalColor * (1 - 0.99) + blurredColor;
+	blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
+	DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
 
-    float decayRate = 0.001;
-	DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - decayRate * deltaTime);
+    // // note: no need to add decay rate
+    // float decayRate = 0.1;
+	// DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - decayRate * deltaTime);
 	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor - decayRate * deltaTime);
-	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
+	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor + decayRate * deltaTime);
 }

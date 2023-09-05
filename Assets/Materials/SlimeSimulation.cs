@@ -25,8 +25,14 @@ public class SlimeSimulation : MonoBehaviour
     [Range(128, 1024)]
     public int height;
 
-    [Range(8, 1024)]
-    public int numOfAgents;
+    [RangeWithStep(32, 1024, 32f)]
+    public float numOfAgents;
+
+    [RangeWithStep(8, 128, 8f)]
+    public float speed;
+
+    [RangeWithStep(0, 1, 0.125f)]
+    public float diffuseRate;
 
     Agent[] agents;
     ComputeBuffer agentsBuffer;
@@ -55,15 +61,16 @@ public class SlimeSimulation : MonoBehaviour
         diffusedTrailMapTexture.Create();
 
         // set up a few agents to simulate
-        agents = new Agent[numOfAgents];
-        for (int i = 0; i < numOfAgents; i++)
+        int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
+        agents = new Agent[numOfAgentsInt];
+        for (int i = 0; i < numOfAgentsInt; i++)
         {
             agents[i].position = Vector2.zero;
             agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
         }
 
         // set up agentsBuffer to be the correct size
-        agentsBuffer = new ComputeBuffer(numOfAgents, Agent.Size);
+        agentsBuffer = new ComputeBuffer(numOfAgentsInt, Agent.Size);
     }
 
     void PrintAgentsPositions()
@@ -90,14 +97,13 @@ public class SlimeSimulation : MonoBehaviour
         // set the "agents buffer" array with the latest position + direction data from "agents"
         agentsBuffer.SetData(agents);
 
-        // todo: maybe used time.fixedDeltaTime? what's the difference anyway?
-        computeShader.SetFloat("deltaTime", Time.deltaTime);
-        computeShader.SetInt("numOfAgents", numOfAgents);
-
         int kernelHandle1 = computeShader.FindKernel("CSPositionMap");
+        computeShader.SetFloat("speed", speed);
+        computeShader.SetFloat("deltaTime", Time.deltaTime);
+        computeShader.SetFloat("numOfAgents", numOfAgents);
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
-        computeShader.Dispatch(kernelHandle1, numOfAgents, 1, 1);
+        computeShader.Dispatch(kernelHandle1, Mathf.RoundToInt(numOfAgents), 1, 1);
 
         // todo: figure out why we need to set the positionTexture again even though
         // we don't need to create the variable for #pragma kernel CSTrailMap
@@ -114,6 +120,7 @@ public class SlimeSimulation : MonoBehaviour
         int kernelHandle3 = computeShader.FindKernel("CSDiffuse");
         computeShader.SetInt("width", width);
         computeShader.SetInt("height", height);
+        computeShader.SetFloat("diffuseRate", diffuseRate);
         computeShader.SetTexture(kernelHandle3, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle3, "TrailMapTexture", trailMapTexture);
         computeShader.SetTexture(kernelHandle3, "DiffusedTrailMapTexture", diffusedTrailMapTexture);
