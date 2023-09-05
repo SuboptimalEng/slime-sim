@@ -78,7 +78,7 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetInt("numOfAgents", numOfAgents);
 
         int kernelHandle1 = computeShader.FindKernel("CSMainNew");
-        computeShader.SetBuffer(kernelHandle1, "agents", agentsBuffer);
+        computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "ResultTexture", resultTexture);
         computeShader.Dispatch(kernelHandle1, resultTexture.width / 8, resultTexture.height / 8, 1);
 
