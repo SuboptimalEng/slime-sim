@@ -1,4 +1,53 @@
-#pragma kernel CSMainNew
+// #pragma kernel CSMainNew
+// struct Agent {
+//     float2 position;
+//     float2 direction;
+// };
+// int numOfAgents;
+// float deltaTime;
+// RWStructuredBuffer<Agent> AgentsBuffer;
+// RWTexture2D<float4> ResultTexture; // use RWTexture2D for UAV access
+// float sdfCircle(float2 p, float r) {
+//     return length(p) - r;
+// }
+// [numthreads(8, 8, 1)]
+// void CSMainNew (uint3 id : SV_DispatchThreadID)
+// {
+//     // note: code used for understanding threads
+//     // if (id.x < 0) {
+//     //     ResultTexture[id.xy] = float4(1, 0, 0, 1);
+//     //     return;
+//     // }
+//     // if (id.x < 0 || id.x > dimensions.x || id.y < 0 || id.y > dimensions.y) {
+//     //     return;
+//     // }
+//     // note: here we reset the background color to black every time
+//     uint2 dimensions;
+//     ResultTexture.GetDimensions(dimensions.x, dimensions.y);
+//     float2 uv = (2.0 * float2(id.xy) - float2(dimensions)) / dimensions.y;
+//     float3 white = float3(1.0, 1.0, 1.0);
+//     float3 black = float3(0.0, 0.0, 0.0);
+//     float3 color = black;
+//     float speed = 0.002;
+//     float radius = 0.01;
+//     for (int i = 0; i < numOfAgents; i++) {
+//         float2 pos = AgentsBuffer[i].position + speed * AgentsBuffer[i].direction * deltaTime;
+//         if (pos.x < -1 || pos.x > 1) {
+//             AgentsBuffer[i].direction.x *= -1;
+//         }
+//         if (pos.y < -1 || pos.y > 1) {
+//             AgentsBuffer[i].direction.y *= -1;
+//         }
+//         float dist = sdfCircle(uv - pos, radius);
+//         // set position
+//         AgentsBuffer[i].position = pos;
+//         // float dist = sdfCircle(uv, radius);
+//         color = dist <= 0 ? white : color;
+//     }
+//     ResultTexture[id.xy] = float4(color, 1.0);
+// }
+
+#pragma kernel CSPositionMap
 
 struct Agent {
     float2 position;
@@ -8,88 +57,69 @@ struct Agent {
 int numOfAgents;
 float deltaTime;
 RWStructuredBuffer<Agent> AgentsBuffer;
-RWTexture2D<float4> ResultTexture; // use RWTexture2D for UAV access
+RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
 
 float sdfCircle(float2 p, float r) {
     return length(p) - r;
 }
 
-[numthreads(8, 8, 1)]
-void CSMainNew (uint3 id : SV_DispatchThreadID)
+[numthreads(16, 1, 1)]
+void CSPositionMap(uint3 id : SV_DispatchThreadID)
 {
-    // note: code used for understanding threads
-    // if (id.x < 0) {
-    //     ResultTexture[id.xy] = float4(1, 0, 0, 1);
-    //     return;
-    // }
-    // if (id.x < 0 || id.x > dimensions.x || id.y < 0 || id.y > dimensions.y) {
-    //     return;
-    // }
-
-    // note: here we reset the background color to black every time
-    uint2 dimensions;
-    ResultTexture.GetDimensions(dimensions.x, dimensions.y);
-
-    // float radius = min(dimensions.x, dimensions.y) * 0.4;
-    float radius = 0.01;
-    // float2 uv = float2(id.xy) / float2(dimensions);
-    // uv = 2.0 * (uv - 0.5);
-    // uv = uv * float2(dimensions) / 500;
-
-    // float2 uv = 2.0 * float2(id.xy) / float2(dimensions) - 1.0;
-    float2 uv = (2.0 * float2(id.xy) - float2(dimensions)) / dimensions.y;
-
-    float3 white = float3(1.0, 1.0, 1.0);
-    float3 black = float3(0.0, 0.0, 0.0);
-    float3 color = black;
-
-    float speed = 0.002;
-
-    for (int i = 0; i < numOfAgents; i++) {
-        float2 pos = AgentsBuffer[i].position + speed * AgentsBuffer[i].direction * deltaTime;
-
-        if (pos.x < -1 || pos.x > 1) {
-            AgentsBuffer[i].direction.x *= -1;
-        }
-        if (pos.y < -1 || pos.y > 1) {
-            AgentsBuffer[i].direction.y *= -1;
-        }
-
-        float dist = sdfCircle(uv - pos, radius);
-
-        // set position
-        AgentsBuffer[i].position = pos;
-
-        // float dist = sdfCircle(uv, radius);
-        color = dist <= 0 ? white : color;
+    // note: prevents undefined behavior that draws agents at the texture map center
+    if (int(id.x) >= numOfAgents) {
+        return;
     }
 
-    ResultTexture[id.xy] = float4(color, 1.0);
+    float speed = 100;
+    float2 pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
+
+    uint2 dimensions;
+    PositionTexture.GetDimensions(dimensions.x, dimensions.y);
+    float maxX = dimensions.x / 2;
+    float maxY = dimensions.y / 2;
+
+    if (pos.x < -maxX || pos.x > maxX) {
+        AgentsBuffer[id.x].direction.x *= -1;
+    }
+    if (pos.y < -maxY || pos.y > maxY) {
+        AgentsBuffer[id.x].direction.y *= -1;
+    }
+
+    AgentsBuffer[id.x].position = pos;
+
+    // x: [-dim.x/2, dim.x/2]
+    // y: [-dim.y/2, dim.y/2]
+    // note: the agents need to start at the center of the texture map
+    // on initialization, they start at the position -> (0, 0)
+    // this needs to be converted to be at the center of the texture map
+    // rather than at the bottom left
+    float2 center = dimensions / 2;
+    pos += center;
+
+    PositionTexture[int2(pos)] = float4(1, 0, 0, 1);
 }
 
 #pragma kernel CSTrailMap
+RWTexture2D<float4> TrailMapTexture;
 
 // note: declaring this again causes an error because it was declared before
-// RWTexture2D<float4> ResultTexture;
-RWTexture2D<float4> TrailMapTexture;
+// RWTexture2D<float4> PositionTexture;
 
 [numthreads(8, 8, 1)]
 void CSTrailMap(uint3 id : SV_DispatchThreadID)
 {
     float4 trailMapColor = TrailMapTexture[id.xy];
 
-    // todo: check if this is first undefined (looks like it's not)
+    // todo: check if this is first undefined on the first run (looks like it's not)
 
     // note: doing this first makes more sense (kinda)
-    // note: lower the trail map color slightly on each iteration
-    // trailMapColor.x = trailMapColor.x - 0.01 < 0 ? 0 : trailMapColor.x - 0.01;
+    // lower the trail map color slightly on each loop to add a "fading" effect
     trailMapColor = max(0, trailMapColor.x - 0.01);
 
-    // note: if the resultTexture is set to 1, then set trailMapColor to 1 as well
-    // trailMapColor.x = ResultTexture[id.xy].x > 0.99 ? 1 : trailMapColor.x;
-    trailMapColor = max(ResultTexture[id.xy].x, trailMapColor.x);
+    // note: if the positionTexture is set to 1, then set trailMapColor to 1 as well
+    trailMapColor = max(PositionTexture[id.xy].x, trailMapColor.x);
 
-    // set texture
     TrailMapTexture[id.xy] = trailMapColor;
 }
 
@@ -120,11 +150,11 @@ void CSDiffuse(uint3 id : SV_DispatchThreadID)
     float4 originalColor = TrailMapTexture[id.xy];
 	// float diffuseWeight = saturate(diffuseRate * deltaTime);
 	// blurredColor = originalColor * (1 - diffuseWeight) + blurredColor * (diffuseWeight);
-	blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
-	// blurredColor = originalColor * (1 - 0.9) + blurredColor;
+	// blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
+	blurredColor = originalColor * (1 - 0.99) + blurredColor;
 
     float decayRate = 0.001;
-	// DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - decayRate * deltaTime);
+	DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - decayRate * deltaTime);
 	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor - decayRate * deltaTime);
-	DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
+	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
 }
