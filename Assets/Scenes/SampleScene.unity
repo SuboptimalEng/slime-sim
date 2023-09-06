@@ -175,8 +175,8 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60
-  orthographic: 1
+  field of view: 32
+  orthographic: 0
   orthographic size: 5.3
   m_Depth: -1
   m_CullingMask:
@@ -517,8 +517,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 02abb0d27b9a84ab48dda2e136b5a48b, type: 3}
-  width: 512
-  height: 512
-  numOfAgents: 100000
-  speed: 96
-  diffuseRate: 0.05
+  width: 2048
+  height: 2048
+  numOfAgents: 380544
+  speed: 40
+  diffuseRate: 0.049999997
+  diffuseDecayRate: 0.19999999

@@ -18,21 +18,37 @@ public class SlimeSimulation : MonoBehaviour
 {
     public ComputeShader computeShader;
 
-    // define render texture dimensions
+    [Header("Texture")]
     [Range(128, 2048)]
     public int width;
 
     [Range(128, 2048)]
     public int height;
 
+    [Header("General")]
     [RangeWithStep(32, 1048576, 32f)]
     public float numOfAgents;
 
-    [RangeWithStep(8, 128, 8f)]
+    [RangeWithStep(8, 256, 8f)]
     public float speed;
 
-    [RangeWithStep(0, 0.5f, 0.05f)]
+    [Header("Trail")]
+    [RangeWithStep(0, 0.01f, 0.001f)]
+    public float trailDecayRate;
+
+    [Header("Diffuse")]
+    [RangeWithStep(0, 1.0f, 0.1f)]
     public float diffuseRate;
+
+    [RangeWithStep(0, 1.0f, 0.1f)]
+    public float diffuseDecayRate;
+
+    [Header("Sensor")]
+    [RangeWithStep(0, 60, 5f)]
+    public float sensorAngle;
+
+    [RangeWithStep(0, 16, 2f)]
+    public float sensorRange;
 
     Agent[] agents;
     ComputeBuffer agentsBuffer;
@@ -90,6 +106,11 @@ public class SlimeSimulation : MonoBehaviour
 
     void Update()
     {
+        if (agents == null)
+        {
+            return;
+        }
+
         // DiscardContents() -> tells unity you no longer need this data.
         // it does not guarantee that memory is immediately released.
         // positionTexture.DiscardContents();
@@ -108,6 +129,8 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetFloat("speed", speed);
         computeShader.SetFloat("deltaTime", Time.deltaTime);
         computeShader.SetFloat("numOfAgents", numOfAgents);
+        computeShader.SetFloat("sensorAngle", sensorAngle);
+        computeShader.SetFloat("sensorRange", sensorRange);
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle1, "TrailMapTexture", trailMapTexture);
@@ -116,6 +139,7 @@ public class SlimeSimulation : MonoBehaviour
         // todo: figure out why we need to set the positionTexture again even though
         // we don't need to create the variable for #pragma kernel CSTrailMap
         int kernelHandle2 = computeShader.FindKernel("CSTrailMap");
+        computeShader.SetFloat("trailDecayRate", trailDecayRate);
         computeShader.SetTexture(kernelHandle2, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle2, "TrailMapTexture", trailMapTexture);
         computeShader.Dispatch(
@@ -129,6 +153,7 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetInt("width", width);
         computeShader.SetInt("height", height);
         computeShader.SetFloat("diffuseRate", diffuseRate);
+        computeShader.SetFloat("diffuseDecayRate", diffuseDecayRate);
         computeShader.SetTexture(kernelHandle3, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle3, "TrailMapTexture", trailMapTexture);
         computeShader.SetTexture(kernelHandle3, "DiffusedTrailMapTexture", diffusedTrailMapTexture);
@@ -154,6 +179,10 @@ public class SlimeSimulation : MonoBehaviour
 
     void OnDestroy()
     {
+        if (agentsBuffer == null)
+        {
+            return;
+        }
         agentsBuffer.Release();
     }
 }
