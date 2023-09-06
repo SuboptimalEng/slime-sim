@@ -93,6 +93,8 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
         // do nothing
 
         // todo: create a better randomization function
+        // todo: change colors of agents with time
+        // todo: add multiple agents that do not interact with each other
         if (deltaTime % 2 == 0) {
             AgentsBuffer[id.x].direction = rightVector;
         } else {
