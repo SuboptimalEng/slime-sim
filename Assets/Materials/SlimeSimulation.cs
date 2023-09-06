@@ -19,19 +19,19 @@ public class SlimeSimulation : MonoBehaviour
     public ComputeShader computeShader;
 
     // define render texture dimensions
-    [Range(128, 1024)]
+    [Range(128, 2048)]
     public int width;
 
-    [Range(128, 1024)]
+    [Range(128, 2048)]
     public int height;
 
-    [RangeWithStep(32, 1024, 32f)]
+    [RangeWithStep(32, 1048576, 32f)]
     public float numOfAgents;
 
     [RangeWithStep(8, 128, 8f)]
     public float speed;
 
-    [RangeWithStep(0, 1, 0.125f)]
+    [RangeWithStep(0, 0.5f, 0.05f)]
     public float diffuseRate;
 
     Agent[] agents;
@@ -60,6 +60,11 @@ public class SlimeSimulation : MonoBehaviour
         diffusedTrailMapTexture.enableRandomWrite = true;
         diffusedTrailMapTexture.Create();
 
+        ResetAgents();
+    }
+
+    public void ResetAgents()
+    {
         // set up a few agents to simulate
         int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
         agents = new Agent[numOfAgentsInt];
@@ -87,7 +92,7 @@ public class SlimeSimulation : MonoBehaviour
     {
         // DiscardContents() -> tells unity you no longer need this data.
         // it does not guarantee that memory is immediately released.
-        positionTexture.DiscardContents();
+        // positionTexture.DiscardContents();
 
         // Release() -> tells unity immediately discard this memory
         // useful to reset previous positions value to float4(0, 0, 0, 0)
@@ -98,12 +103,15 @@ public class SlimeSimulation : MonoBehaviour
         agentsBuffer.SetData(agents);
 
         int kernelHandle1 = computeShader.FindKernel("CSPositionMap");
+        computeShader.SetInt("width", width);
+        computeShader.SetInt("height", height);
         computeShader.SetFloat("speed", speed);
         computeShader.SetFloat("deltaTime", Time.deltaTime);
         computeShader.SetFloat("numOfAgents", numOfAgents);
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
-        computeShader.Dispatch(kernelHandle1, Mathf.RoundToInt(numOfAgents), 1, 1);
+        computeShader.SetTexture(kernelHandle1, "TrailMapTexture", trailMapTexture);
+        computeShader.Dispatch(kernelHandle1, Mathf.RoundToInt(numOfAgents) / 32, 1, 1);
 
         // todo: figure out why we need to set the positionTexture again even though
         // we don't need to create the variable for #pragma kernel CSTrailMap
@@ -131,14 +139,14 @@ public class SlimeSimulation : MonoBehaviour
             1
         );
 
+        // copy diffusedTrailMapTexture into trailMapTexture so that the trailMap
+        // can decrement the values in the blurred sections of the trail
+        Graphics.Blit(diffusedTrailMapTexture, trailMapTexture);
+
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
         // meshRenderer.material.mainTexture = positionTexture;
         // meshRenderer.material.mainTexture = trailMapTexture;
         meshRenderer.material.mainTexture = diffusedTrailMapTexture;
-
-        // copy diffusedTrailMapTexture into trailMapTexture so that the trailMap
-        // can decrement the values in the blurred sections of the trail
-        // Graphics.Blit(diffusedTrailMapTexture, trailMapTexture);
 
         // update the "agents" array with the positions + directions from the compute shader
         agentsBuffer.GetData(agents);

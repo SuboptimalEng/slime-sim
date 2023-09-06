@@ -54,6 +54,8 @@ struct Agent {
     float2 direction;
 };
 
+int width;
+int height;
 float speed;
 float deltaTime;
 float numOfAgents;
@@ -62,11 +64,31 @@ RWStructuredBuffer<Agent> AgentsBuffer;
 RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
 RWTexture2D<float4> TrailMapTexture; // use RWTexture2D for UAV access
 
-[numthreads(16, 1, 1)]
+float sense(Agent agent, float2 center, float2 newDirection)
+{
+    float sum = 0;
+
+    float2 sensorPosition = agent.position + 2.0 * speed * newDirection * deltaTime;
+
+    for (int offsetX = -1; offsetX <= 1; offsetX++) {
+        for (int offsetY = -1; offsetY <= 1; offsetY++) {
+			int sampleX = min(width-1, max(0, sensorPosition.x + offsetX));
+			int sampleY = min(height-1, max(0, sensorPosition.y + offsetY));
+            // todo: maybe update how sum works
+			sum += TrailMapTexture[int2(sampleX,sampleY) + center].x;
+        }
+    }
+
+    // return 0;
+
+    return sum;
+}
+
+[numthreads(32, 1, 1)]
 void CSPositionMap(uint3 id : SV_DispatchThreadID)
 {
     // note: prevents undefined behavior that draws agents at the texture map center
-    if (id.x >= numOfAgents) {
+    if (float(id.x) >= numOfAgents) {
         return;
     }
 
@@ -85,17 +107,91 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     }
 
     AgentsBuffer[id.x].position = pos;
-
-    // x: [-dim.x/2, dim.x/2]
-    // y: [-dim.y/2, dim.y/2]
-    // note: the agents need to start at the center of the texture map
-    // on initialization, they start at the position -> (0, 0)
-    // this needs to be converted to be at the center of the texture map
-    // rather than at the bottom left
     float2 center = dimensions / 2;
     pos += center;
-
     PositionTexture[int2(pos)] = float4(1, 0, 0, 1);
+
+    // part 2: sense
+    // Convert angles to radians
+    float anglePlus45 = radians(45);
+    float angleMinus45 = radians(-45);
+
+    // Create rotation matrices
+    float2x2 rotationMatrix45 = float2x2(
+        cos(anglePlus45), -sin(anglePlus45),
+        sin(anglePlus45), cos(anglePlus45)
+    );
+    float2x2 rotationMatrixMinus45 = float2x2(
+        cos(angleMinus45), -sin(angleMinus45),
+        sin(angleMinus45), cos(angleMinus45)
+    );
+
+    float2 forwardVector = AgentsBuffer[id.x].direction;
+    // Rotate the forward vector to get the 45-degree vector
+    float2 rightVector = mul(rotationMatrix45, forwardVector);
+    // Rotate the forward vector to get the -45-degree vector
+    float2 leftVector = mul(rotationMatrixMinus45, forwardVector);
+
+    // sense
+    // float2 forwardPosition = AgentsBuffer[id.x].position + 2.0 * speed * forwardVector * deltaTime;
+    // float2 forwardRightPosition = AgentsBuffer[id.x].position + 2.0 * speed * rightVector * deltaTime;
+    // float2 forwardLeftPosition = AgentsBuffer[id.x].position + 2.0 * speed * leftVector * deltaTime;
+
+    // note: be sure to add the center position
+    // float4 forward = TrailMapTexture[forwardPosition + center];
+    // float4 forwardRight = TrailMapTexture[forwardRightPosition + center];
+    // float4 forwardLeft = TrailMapTexture[forwardLeftPosition + center];
+
+    // sense function replaces above two commented segments
+    Agent agent = AgentsBuffer[id.x];
+    float forwardSum = sense(agent, center, forwardVector);
+    float rightSum = sense(agent, center, rightVector);
+    float leftSum = sense(agent, center, leftVector);
+
+    if (forwardSum >= leftSum && forwardSum >= rightSum) {
+        // do nothing
+    } else if (forwardSum < leftSum && forwardSum < rightSum) {
+        // do nothing
+
+        // todo: find a better randomization fn
+        if (deltaTime % 2 == 0) {
+            AgentsBuffer[id.x].direction = rightVector;
+        } else {
+            AgentsBuffer[id.x].direction = leftVector;
+        }
+    } else if (rightSum > leftSum) {
+        AgentsBuffer[id.x].direction = rightVector;
+    } else if (leftSum > rightSum) {
+        AgentsBuffer[id.x].direction = leftVector;
+    } else {
+        // do nothing
+    }
+
+    // // note: prevents undefined behavior that draws agents at the texture map center
+    // if (id.x >= numOfAgents) {
+    //     return;
+    // }
+    // float2 pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
+    // uint2 dimensions;
+    // PositionTexture.GetDimensions(dimensions.x, dimensions.y);
+    // float maxX = dimensions.x / 2;
+    // float maxY = dimensions.y / 2;
+    // if (pos.x < -maxX || pos.x > maxX) {
+    //     AgentsBuffer[id.x].direction.x *= -1;
+    // }
+    // if (pos.y < -maxY || pos.y > maxY) {
+    //     AgentsBuffer[id.x].direction.y *= -1;
+    // }
+    // AgentsBuffer[id.x].position = pos;
+    // // x: [-dim.x/2, dim.x/2]
+    // // y: [-dim.y/2, dim.y/2]
+    // // note: the agents need to start at the center of the texture map
+    // // on initialization, they start at the position -> (0, 0)
+    // // this needs to be converted to be at the center of the texture map
+    // // rather than at the bottom left
+    // float2 center = dimensions / 2;
+    // pos += center;
+    // PositionTexture[int2(pos)] = float4(1, 0, 0, 1);
 }
 
 #pragma kernel CSTrailMap
@@ -123,8 +219,6 @@ void CSTrailMap(uint3 id : SV_DispatchThreadID)
 // NOTE: DO THIS IN A SEPARATE PASS
 #pragma kernel CSDiffuse
 RWTexture2D<float4> DiffusedTrailMapTexture;
-int width;
-int height;
 float diffuseRate;
 
 [numthreads(8, 8, 1)]
