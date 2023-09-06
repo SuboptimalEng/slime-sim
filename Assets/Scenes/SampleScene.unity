@@ -159,7 +159,7 @@ Camera:
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 2
+  m_ClearFlags: 4
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
@@ -517,9 +517,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 02abb0d27b9a84ab48dda2e136b5a48b, type: 3}
-  width: 2048
-  height: 2048
-  numOfAgents: 380544
-  speed: 40
-  diffuseRate: 0.049999997
-  diffuseDecayRate: 0.19999999
+  width: 1024
+  height: 1024
+  numOfAgents: 808288
+  speed: 192
+  trailDecayRate: 0.010000001
+  diffuseRate: 1
+  diffuseDecayRate: 1
+  sensorAngle: 30
+  sensorRange: 8

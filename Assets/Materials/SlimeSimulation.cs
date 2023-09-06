@@ -86,8 +86,13 @@ public class SlimeSimulation : MonoBehaviour
         agents = new Agent[numOfAgentsInt];
         for (int i = 0; i < numOfAgentsInt; i++)
         {
-            agents[i].position = Vector2.zero;
-            agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
+            // part 1 - all agents at center facing outwards
+            // agents[i].position = Vector2.zero;
+            // agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
+
+            // part 2 - circle facing inwards
+            agents[i].position = 512 * UnityEngine.Random.insideUnitCircle;
+            agents[i].direction = (Vector2.zero - agents[i].position).normalized;
         }
 
         // set up agentsBuffer to be the correct size
