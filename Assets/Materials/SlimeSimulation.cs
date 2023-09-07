@@ -33,7 +33,7 @@ public class SlimeSimulation : MonoBehaviour
     public float speed;
 
     [Header("Trail")]
-    [RangeWithStep(0, 0.01f, 0.001f)]
+    [RangeWithStep(0, 0.01f, 0.002f)]
     public float trailDecayRate;
 
     [Header("Diffuse")]

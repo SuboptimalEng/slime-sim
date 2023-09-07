@@ -64,28 +64,28 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     PositionTexture[int2(pos)] = float4(1, 0, 0, 1);
 
     // Convert angles to radians
-    float rightSensor = radians(sensorAngle);
-    float leftSensor = radians(-sensorAngle);
+    float leftRadians = radians(-sensorAngle);
+    float rightRadians = radians(sensorAngle);
 
     // Create rotation matrices
-    float2x2 rightRotationMatrix = float2x2(
-        cos(rightSensor), -sin(rightSensor),
-        sin(rightSensor), cos(rightSensor)
-    );
     float2x2 leftRotationMatrix = float2x2(
-        cos(leftSensor), -sin(leftSensor),
-        sin(leftSensor), cos(leftSensor)
+        cos(leftRadians), -sin(leftRadians),
+        sin(leftRadians), cos(leftRadians)
+    );
+    float2x2 rightRotationMatrix = float2x2(
+        cos(rightRadians), -sin(rightRadians),
+        sin(rightRadians), cos(rightRadians)
     );
 
+    // get left right vectors
     float2 forwardVector = AgentsBuffer[id.x].direction;
-    float2 rightVector = mul(rightRotationMatrix, forwardVector);
     float2 leftVector = mul(leftRotationMatrix, forwardVector);
+    float2 rightVector = mul(rightRotationMatrix, forwardVector);
 
-    // sense function replaces above two commented segments
     Agent agent = AgentsBuffer[id.x];
     float forwardSum = sense(agent, center, forwardVector);
-    float rightSum = sense(agent, center, rightVector);
     float leftSum = sense(agent, center, leftVector);
+    float rightSum = sense(agent, center, rightVector);
 
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
@@ -118,7 +118,7 @@ void CSTrailMap(uint3 id : SV_DispatchThreadID)
     // todo: check if this is first undefined on the first run (looks like it's not)
     float4 trailMapColor = TrailMapTexture[id.xy];
 
-    // note: doing this first makes more sense (kinda)
+    // note: doing this first seems more reasonable (kinda)
     // lower the trail map color slightly on each loop to add a "fading" effect
     trailMapColor = max(0, trailMapColor.x - trailDecayRate);
 
@@ -158,8 +158,8 @@ void CSDiffuse(uint3 id : SV_DispatchThreadID)
 	DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
 
     // note: both approaches essentially perform the same operation
-	DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - diffuseDecayRate * deltaTime);
-	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor - diffuseDecayRate * deltaTime);
+	// DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - diffuseDecayRate * deltaTime);
+	DiffusedTrailMapTexture[id.xy] = max(0, blurredColor - diffuseDecayRate * deltaTime);
     // note: expands
 	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor + diffuseDecayRate * deltaTime);
 }
