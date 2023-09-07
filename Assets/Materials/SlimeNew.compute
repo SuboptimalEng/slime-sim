@@ -8,6 +8,7 @@ struct Agent {
 int width;
 int height;
 float speed;
+float time;
 float deltaTime;
 float numOfAgents;
 float sensorAngle;
@@ -32,6 +33,18 @@ float sense(Agent agent, float2 center, float2 newDirection)
     }
 
     return sum;
+}
+
+// Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
+uint hash(uint state)
+{
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    return state;
 }
 
 [numthreads(32, 1, 1)]
@@ -90,12 +103,13 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
     } else if (forwardSum < leftSum && forwardSum < rightSum) {
-        // do nothing
-
-        // todo: create a better randomization function
         // todo: change colors of agents with time
         // todo: add multiple agents that do not interact with each other
-        if (deltaTime % 2 == 0) {
+
+        // todo: create a better randomization function
+        // random fn -> https://github.com/SebLague/Slime-Simulation
+        uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+        if (random % 2 == 0) {
             AgentsBuffer[id.x].direction = rightVector;
         } else {
             AgentsBuffer[id.x].direction = leftVector;
@@ -110,7 +124,11 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
 }
 
 #pragma kernel CSTrailMap
+
 float trailDecayRate;
+
+// Texture2D<float4> GradientTexture;
+// SamplerState samplerGradientTexture;
 
 [numthreads(8, 8, 1)]
 void CSTrailMap(uint3 id : SV_DispatchThreadID)
@@ -130,13 +148,21 @@ void CSTrailMap(uint3 id : SV_DispatchThreadID)
 
 
 // NOTE: DO THIS IN A SEPARATE PASS
-#pragma kernel CSDiffuse
-RWTexture2D<float4> DiffusedTrailMapTexture;
+#pragma kernel CSDiffuseMap
+
 float diffuseRate;
 float diffuseDecayRate;
 
+RWTexture2D<float4> DiffuseMapTexture;
+RWTexture2D<float4> ColorMapTexture;
+
+// note: example sampling from a texture map!!!
+Texture2D<float4> GradientTexture;
+// note: this is required? not sure exactly how it works
+SamplerState samplerGradientTexture;
+
 [numthreads(8, 8, 1)]
-void CSDiffuse(uint3 id : SV_DispatchThreadID)
+void CSDiffuseMap(uint3 id : SV_DispatchThreadID)
 {
     // note: do not blur on the same map as trail map because that will mess up trail data
     // 3x3 blur
@@ -155,11 +181,25 @@ void CSDiffuse(uint3 id : SV_DispatchThreadID)
 	// float diffuseWeight = saturate(diffuseRate * deltaTime);
 	// blurredColor = originalColor * (1 - diffuseWeight) + blurredColor * (diffuseWeight);
 	blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
-	DiffusedTrailMapTexture[id.xy] = max(0, blurredColor);
+	DiffuseMapTexture[id.xy] = max(0, blurredColor);
 
     // note: both approaches essentially perform the same operation
-	// DiffusedTrailMapTexture[id.xy] = blurredColor * saturate(1 - diffuseDecayRate * deltaTime);
-	DiffusedTrailMapTexture[id.xy] = max(0, blurredColor - diffuseDecayRate * deltaTime);
+	// DiffuseMapTexture[id.xy] = blurredColor * saturate(1 - diffuseDecayRate * deltaTime);
+	DiffuseMapTexture[id.xy] = max(0, blurredColor - diffuseDecayRate * deltaTime);
     // note: expands
-	// DiffusedTrailMapTexture[id.xy] = max(0, blurredColor + diffuseDecayRate * deltaTime);
+	// DiffuseMapTexture[id.xy] = max(0, blurredColor + diffuseDecayRate * deltaTime);
+
+    // // note: set the color map here
+    // // we know that x, y, z values are all the same so we can sample from any one of them
+    float t = DiffuseMapTexture[id.xy].x;
+    // // texture map is 2d but y value is only 1 in height, so we only care about x coord
+    float2 uv = float2(t, 0);
+
+    // note: not sure why the third method works, but it works
+    // todo: maybe figure out why it works
+    // float4 color = tex2D(samplerGradientTexture, uv); // dx9
+    // float4 color = GradientTexture.Sample(samplerGradientTexture, uv); // dx11
+    float4 color = GradientTexture.SampleLevel(samplerGradientTexture, uv, 0); // dx11
+
+    ColorMapTexture[id.xy] = color;
 }

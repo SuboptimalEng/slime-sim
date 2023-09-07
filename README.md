@@ -1,5 +1,10 @@
 # 🐌 Slime Sim
+
 Simulating slime.
+
+## Resources
+
+- [Sebastian Lague's Slime Simulation](https://github.com/SebLague/Slime-Simulation)
 
 ## License
 

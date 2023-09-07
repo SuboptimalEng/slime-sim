@@ -50,11 +50,15 @@ public class SlimeSimulation : MonoBehaviour
     [RangeWithStep(0, 16, 2f)]
     public float sensorRange;
 
+    public Gradient gradient;
+    Texture2D gradientTexture;
+
     Agent[] agents;
     ComputeBuffer agentsBuffer;
     RenderTexture positionTexture;
     RenderTexture trailMapTexture;
-    RenderTexture diffusedTrailMapTexture;
+    RenderTexture diffuseMapTexture;
+    RenderTexture colorMapTexture;
 
     void Start()
     {
@@ -72,14 +76,19 @@ public class SlimeSimulation : MonoBehaviour
         trailMapTexture.enableRandomWrite = true;
         trailMapTexture.Create();
 
-        diffusedTrailMapTexture = new RenderTexture(width, height, depth, format, readWrite);
-        diffusedTrailMapTexture.enableRandomWrite = true;
-        diffusedTrailMapTexture.Create();
+        diffuseMapTexture = new RenderTexture(width, height, depth, format, readWrite);
+        diffuseMapTexture.enableRandomWrite = true;
+        diffuseMapTexture.Create();
 
-        ResetAgents();
+        colorMapTexture = new RenderTexture(width, height, depth, format, readWrite);
+        colorMapTexture.enableRandomWrite = true;
+        colorMapTexture.Create();
+
+        InitializeAgents();
+        InitializeGradientTexture();
     }
 
-    public void ResetAgents()
+    public void InitializeAgents()
     {
         // set up a few agents to simulate
         int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
@@ -91,12 +100,36 @@ public class SlimeSimulation : MonoBehaviour
             // agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
 
             // part 2 - circle facing inwards
-            agents[i].position = 512 * UnityEngine.Random.insideUnitCircle;
+            float initialRadius = Mathf.Min(width, height) / 2 - 10;
+            agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
             agents[i].direction = (Vector2.zero - agents[i].position).normalized;
         }
 
         // set up agentsBuffer to be the correct size
         agentsBuffer = new ComputeBuffer(numOfAgentsInt, Agent.Size);
+    }
+
+    void InitializeGradientTexture()
+    {
+        int textureWidth = 256; // Set the desired width of the texture
+        int textureHeight = 1; // Since it's a 1D gradient, set the height to 1
+
+        gradientTexture = new Texture2D(
+            textureWidth,
+            textureHeight,
+            TextureFormat.RGBA32,
+            0,
+            false
+        );
+
+        for (int x = 0; x < textureWidth; x++)
+        {
+            float t = (float)x / (float)(textureWidth - 1); // Normalize x to [0, 1]
+            Color color = gradient.Evaluate(t); // Evaluate the gradient color at position t
+            gradientTexture.SetPixel(x, 0, color); // Set the color at the pixel position
+        }
+
+        gradientTexture.Apply();
     }
 
     void PrintAgentsPositions()
@@ -132,6 +165,7 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetInt("width", width);
         computeShader.SetInt("height", height);
         computeShader.SetFloat("speed", speed);
+        computeShader.SetFloat("time", Time.time);
         computeShader.SetFloat("deltaTime", Time.deltaTime);
         computeShader.SetFloat("numOfAgents", numOfAgents);
         computeShader.SetFloat("sensorAngle", sensorAngle);
@@ -154,29 +188,38 @@ public class SlimeSimulation : MonoBehaviour
             1
         );
 
-        int kernelHandle3 = computeShader.FindKernel("CSDiffuse");
+        int kernelHandle3 = computeShader.FindKernel("CSDiffuseMap");
         computeShader.SetInt("width", width);
         computeShader.SetInt("height", height);
         computeShader.SetFloat("diffuseRate", diffuseRate);
         computeShader.SetFloat("diffuseDecayRate", diffuseDecayRate);
         computeShader.SetTexture(kernelHandle3, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle3, "TrailMapTexture", trailMapTexture);
-        computeShader.SetTexture(kernelHandle3, "DiffusedTrailMapTexture", diffusedTrailMapTexture);
+        computeShader.SetTexture(kernelHandle3, "DiffuseMapTexture", diffuseMapTexture);
+
+        computeShader.SetTexture(kernelHandle3, "ColorMapTexture", colorMapTexture);
+        computeShader.SetTexture(kernelHandle3, "GradientTexture", gradientTexture);
+
         computeShader.Dispatch(
             kernelHandle3,
-            diffusedTrailMapTexture.width / 8,
-            diffusedTrailMapTexture.height / 8,
+            diffuseMapTexture.width / 8,
+            diffuseMapTexture.height / 8,
             1
         );
 
-        // copy diffusedTrailMapTexture into trailMapTexture so that the trailMap
+        // int kernelHandle4 = computeShader.FindKernel("CSColor");
+        // computeShader.SetTexture(kernelHandle4, "TrailMapTexture", trailMapTexture);
+        // computeShader.SetTexture(kernelHandle4, "ColorMapTexture", colorMapTexture);
+
+        // copy diffuseTrailMapTexture into trailMapTexture so that the trailMap
         // can decrement the values in the blurred sections of the trail
-        Graphics.Blit(diffusedTrailMapTexture, trailMapTexture);
+        Graphics.Blit(diffuseMapTexture, trailMapTexture);
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
         // meshRenderer.material.mainTexture = positionTexture;
         // meshRenderer.material.mainTexture = trailMapTexture;
-        meshRenderer.material.mainTexture = diffusedTrailMapTexture;
+        // meshRenderer.material.mainTexture = diffuseMapTexture;
+        meshRenderer.material.mainTexture = colorMapTexture;
 
         // update the "agents" array with the positions + directions from the compute shader
         agentsBuffer.GetData(agents);
@@ -189,5 +232,6 @@ public class SlimeSimulation : MonoBehaviour
             return;
         }
         agentsBuffer.Release();
+        Destroy(gradientTexture);
     }
 }

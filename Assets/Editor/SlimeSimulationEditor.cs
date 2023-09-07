@@ -36,7 +36,7 @@ public class SlimeSimulationEditor : Editor
             // Apply any modifications to the serialized object
             serializedObject.ApplyModifiedProperties();
 
-            slimeSimulation.ResetAgents();
+            slimeSimulation.InitializeAgents();
         }
         else
         {
