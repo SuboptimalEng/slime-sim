@@ -104,9 +104,10 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
         // do nothing
     } else if (forwardSum < leftSum && forwardSum < rightSum) {
         // todo: change colors of agents with time
-        // todo: add multiple agents that do not interact with each other
-
         // todo: create a better randomization function
+        // todo: add multiple agents that do not interact with each other
+        // todo: add parameters to customize the slime mold (as seen in the paper)
+
         // random fn -> https://github.com/SebLague/Slime-Simulation
         uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
         if (random % 2 == 0) {
