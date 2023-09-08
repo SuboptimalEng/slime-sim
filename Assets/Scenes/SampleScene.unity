@@ -517,17 +517,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 02abb0d27b9a84ab48dda2e136b5a48b, type: 3}
-  width: 1024
-  height: 1024
+  width: 512
+  height: 512
   numOfAgents: 793728
-  speed: 48
-  distFromMapEdge: 20
-  trailDecayRate: 0.5
-  diffuseRate: 0.5
-  diffuseDecayRate: 0.5
-  sensorDistance: 4
-  sensorAngle: 30
-  turnAngle: 90
+  speed: 32
+  distFromMapEdge: 10
+  trailDecayRate: 0.1
+  diffuseRate: 0.8
+  diffuseDecayRate: 0.2
+  sensorOffset: 23
+  sensorAngle: 45
+  rotationAngle: 45
   gradient:
     serializedVersion: 2
     key0: {r: 0, g: 0, b: 0, a: 1}
@@ -598,9 +598,9 @@ MonoBehaviour:
   trailDecayRate: 0.5
   diffuseRate: 0.5
   diffuseDecayRate: 0.5
-  sensorDistance: 4
+  sensorOffset: 0
   sensorAngle: 180
-  turnAngle: 180
+  rotationAngle: 180
   gradient:
     serializedVersion: 2
     key0: {r: 0, g: 0, b: 0, a: 1}
