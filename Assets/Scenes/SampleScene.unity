@@ -520,13 +520,13 @@ MonoBehaviour:
   width: 1024
   height: 1024
   numOfAgents: 793728
-  speed: 256
+  speed: 48
   distFromMapEdge: 20
-  trailDecayRate: 0.1
+  trailDecayRate: 0.5
   diffuseRate: 0.5
-  diffuseDecayRate: 0.1
+  diffuseDecayRate: 0.5
   sensorAngle: 60
-  sensorRange: 8
+  sensorDistance: 0
   gradient:
     serializedVersion: 2
     key0: {r: 0, g: 0, b: 0, a: 1}

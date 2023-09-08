@@ -3,6 +3,7 @@
 struct Agent {
     float2 position;
     float2 direction;
+    float angleInRadians;
 };
 
 int width;
@@ -14,17 +15,19 @@ float time;
 float deltaTime;
 
 float numOfAgents;
-float sensorAngle;
 float sensorDistance;
+float sensorAngle;
+float turnAngle;
 
 RWStructuredBuffer<Agent> AgentsBuffer;
 RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
 RWTexture2D<float4> TrailMapTexture; // use RWTexture2D for UAV access
 
-float sense(Agent agent, float2 center, float2 newDirection)
+float sense(float2 agentPosition, float2 center, float2 newDirection)
 {
     // note: add center here
-    float2 lookAheadPosition = agent.position + center + sensorDistance * speed * newDirection * deltaTime;
+    float2 lookAheadPosition =
+        agentPosition + center + sensorDistance * speed * newDirection * deltaTime;
     float sum = 0;
 
     for (int offsetX = -1; offsetX <= 1; offsetX++) {
@@ -50,6 +53,13 @@ uint hash(uint state)
     return state;
 }
 
+float2 radiansToDirection(float angleInRadians) {
+    float2 direction;
+    direction.x = cos(angleInRadians);
+    direction.y = sin(angleInRadians);
+    return direction;
+}
+
 [numthreads(32, 1, 1)]
 void CSPositionMap(uint3 id : SV_DispatchThreadID)
 {
@@ -58,7 +68,11 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
         return;
     }
 
-    float2 pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
+    float2 agentDirection = radiansToDirection(AgentsBuffer[id.x].angleInRadians);
+    float2 pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
+
+    // note: old method using direction
+    // float2 pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
 
     uint2 dimensions;
     PositionTexture.GetDimensions(dimensions.x, dimensions.y);
@@ -66,36 +80,24 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     float maxY = dimensions.y / 2;
 
     if (pos.x < -maxX + distFromMapEdge || pos.x > maxX - distFromMapEdge) {
-        // // note: this still makes agents go outside of the map
-        // // Generate a random angle within the range [0, 2 * PI]
-        // // float angle = _RandomSeed * 6.2831853; // 2 * PI
-        // uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
-        // float angle = random * 6.2831853; // 2 * PI
-        // // Calculate the direction vector from the angle
-        // float2 direction;
-        // direction.x = cos(angle);
-        // direction.y = sin(angle);
-        // AgentsBuffer[id.x].direction = direction;
+        // note: this method works, but it requires more operations later in the algorithm
+        // AgentsBuffer[id.x].direction.x *= -1;
+        // pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
 
-        AgentsBuffer[id.x].direction.x *= -1;
-        pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
+        // note: this is another approach with angle in radians
+        agentDirection.x *= -1;
+        AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
+        pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
     }
-    if (pos.y < -maxY + distFromMapEdge|| pos.y > maxY - distFromMapEdge) {
-        // // note: this still makes agents go outside of the map
-        // // Generate a random angle within the range [0, 2 * PI]
-        // // float angle = _RandomSeed * 6.2831853; // 2 * PI
-        // uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
-        // float angle = random * 6.2831853; // 2 * PI
-        // // Calculate the direction vector from the angle
-        // float2 direction;
-        // direction.x = cos(angle);
-        // direction.y = sin(angle);
-        // AgentsBuffer[id.x].direction = direction;
-        // Generate a random angle within the range [0, 2 * PI]
-        // float angle = _RandomSeed * 6.2831853; // 2 * PI
+    if (pos.y < -maxY + distFromMapEdge || pos.y > maxY - distFromMapEdge) {
+        // note: this method works, but it requires more operations later in the algorithm
+        // AgentsBuffer[id.x].direction.y *= -1;
+        // pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
 
-        AgentsBuffer[id.x].direction.y *= -1;
-        pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
+        // note: this is another approach with angle in radians
+        agentDirection.y *= -1;
+        AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
+        pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
     }
 
     AgentsBuffer[id.x].position = pos;
@@ -103,52 +105,79 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     pos += center;
     PositionTexture[int2(pos)] = float4(1, 0, 0, 1);
 
-    // Convert angles to radians
-    float leftRadians = radians(-sensorAngle);
-    float rightRadians = radians(sensorAngle);
+    // note: new approach with radians
+    float forwardRadians = AgentsBuffer[id.x].angleInRadians;
+    float leftRadians = forwardRadians - radians(sensorAngle);
+    float rightRadians = forwardRadians + radians(sensorAngle);
 
-    // Create rotation matrices
-    float2x2 leftRotationMatrix = float2x2(
-        cos(leftRadians), -sin(leftRadians),
-        sin(leftRadians), cos(leftRadians)
-    );
-    float2x2 rightRotationMatrix = float2x2(
-        cos(rightRadians), -sin(rightRadians),
-        sin(rightRadians), cos(rightRadians)
-    );
+    float2 forwardVector = radiansToDirection(forwardRadians);
+    float2 leftVector = radiansToDirection(leftRadians);
+    float2 rightVector = radiansToDirection(rightRadians);
 
-    // get left right vectors
-    float2 forwardVector = AgentsBuffer[id.x].direction;
-    float2 leftVector = mul(leftRotationMatrix, forwardVector);
-    float2 rightVector = mul(rightRotationMatrix, forwardVector);
+    float2 agentPosition = AgentsBuffer[id.x].position;
+    float forwardSum = sense(agentPosition, center, forwardVector);
+    float leftSum = sense(agentPosition, center, leftVector);
+    float rightSum = sense(agentPosition, center, rightVector);
 
-    Agent agent = AgentsBuffer[id.x];
-    float forwardSum = sense(agent, center, forwardVector);
-    float leftSum = sense(agent, center, leftVector);
-    float rightSum = sense(agent, center, rightVector);
+    float leftTurnRadians = forwardRadians - radians(turnAngle);
+    float rightTurnRadians = forwardRadians + radians(turnAngle);
 
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
     } else if (forwardSum < leftSum && forwardSum < rightSum) {
-        // todo: change colors of agents with time
-        // todo: create a better randomization function
-        // todo: add multiple agents that do not interact with each other
-        // todo: add parameters to customize the slime mold (as seen in the paper)
-
-        // random fn -> https://github.com/SebLague/Slime-Simulation
+        // note: random fn -> https://github.com/SebLague/Slime-Simulation
         uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
         if (random % 2 == 0) {
-            AgentsBuffer[id.x].direction = rightVector;
+            AgentsBuffer[id.x].angleInRadians = leftTurnRadians;
         } else {
-            AgentsBuffer[id.x].direction = leftVector;
+            AgentsBuffer[id.x].angleInRadians = rightTurnRadians;
         }
-    } else if (rightSum > leftSum) {
-        AgentsBuffer[id.x].direction = rightVector;
     } else if (leftSum > rightSum) {
-        AgentsBuffer[id.x].direction = leftVector;
+        AgentsBuffer[id.x].angleInRadians = leftTurnRadians;
+    } else if (rightSum > leftSum) {
+        AgentsBuffer[id.x].angleInRadians = rightTurnRadians;
     } else {
         // do nothing
     }
+
+    // // note: old approach with tons of matrix multiplication
+    // // Convert angles to radians
+    // float leftRadians = radians(-sensorAngle);
+    // float rightRadians = radians(sensorAngle);
+    // // Create rotation matrices
+    // float2x2 leftRotationMatrix = float2x2(
+    //     cos(leftRadians), -sin(leftRadians),
+    //     sin(leftRadians), cos(leftRadians)
+    // );
+    // float2x2 rightRotationMatrix = float2x2(
+    //     cos(rightRadians), -sin(rightRadians),
+    //     sin(rightRadians), cos(rightRadians)
+    // );
+    // // get left right vectors
+    // float2 forwardVector = AgentsBuffer[id.x].direction;
+    // float2 leftVector = mul(leftRotationMatrix, forwardVector);
+    // float2 rightVector = mul(rightRotationMatrix, forwardVector);
+    // float2 agentPosition = AgentsBuffer[id.x].position;
+    // float forwardSum = sense(agentPosition, center, forwardVector);
+    // float leftSum = sense(agentPosition, center, leftVector);
+    // float rightSum = sense(agentPosition, center, rightVector);
+    // if (forwardSum >= leftSum && forwardSum >= rightSum) {
+    //     // do nothing
+    // } else if (forwardSum < leftSum && forwardSum < rightSum) {
+    //     // random fn -> https://github.com/SebLague/Slime-Simulation
+    //     uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+    //     if (random % 2 == 0) {
+    //         AgentsBuffer[id.x].direction = leftVector;
+    //     } else {
+    //         AgentsBuffer[id.x].direction = rightVector;
+    //     }
+    // } else if (rightSum > leftSum) {
+    //     AgentsBuffer[id.x].direction = rightVector;
+    // } else if (leftSum > rightSum) {
+    //     AgentsBuffer[id.x].direction = leftVector;
+    // } else {
+    //     // do nothing
+    // }
 }
 
 #pragma kernel CSTrailMap

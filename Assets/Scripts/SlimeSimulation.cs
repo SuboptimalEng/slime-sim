@@ -7,10 +7,11 @@ public struct Agent
 {
     public Vector2 position;
     public Vector2 direction;
+    public float angleInRadians;
 
     public static int Size
     {
-        get { return sizeof(float) * 2 * 2; }
+        get { return sizeof(float) * 2 * 2 + sizeof(float); }
     }
 }
 
@@ -47,11 +48,14 @@ public class SlimeSimulation : MonoBehaviour
     public float diffuseDecayRate;
 
     [Header("Sensor")]
-    [RangeWithStep(0, 60, 5f)]
+    [RangeWithStep(0, 16, 1f)]
+    public float sensorDistance;
+
+    [RangeWithStep(0, 180, 10f)]
     public float sensorAngle;
 
-    [RangeWithStep(0, 16, 2f)]
-    public float sensorDistance;
+    [RangeWithStep(0, 180, 10f)]
+    public float turnAngle;
 
     public Gradient gradient;
     Texture2D gradientTexture;
@@ -106,6 +110,9 @@ public class SlimeSimulation : MonoBehaviour
             float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
             agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
             agents[i].direction = (Vector2.zero - agents[i].position).normalized;
+            // // note: atan2 takes y first, then x
+            // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.x, agents[i].direction.y);
+            agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
         }
 
         // set up agentsBuffer to be the correct size
@@ -174,8 +181,9 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetFloat("deltaTime", Time.deltaTime);
 
         computeShader.SetFloat("numOfAgents", numOfAgents);
-        computeShader.SetFloat("sensorAngle", sensorAngle);
         computeShader.SetFloat("sensorDistance", sensorDistance);
+        computeShader.SetFloat("sensorAngle", sensorAngle);
+        computeShader.SetFloat("turnAngle", turnAngle);
 
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
