@@ -30,15 +30,13 @@ float2 radiansToDirection(float angleInRadians) {
     return direction;
 }
 
-float sense(Agent agent, float2 center, float angleOffset)
+float sense(Agent agent, float2 center, float2 newDirection)
 {
     // note: old look ahead method, add center here
     // float2 lookAheadPosition =
     //     agent.position + center + sensorOffset * speed * newDirection * deltaTime;
 
     // note: new look ahead method, add center here
-    float newDirectionInRadians = agent.angleInRadians + angleOffset;
-    float2 newDirection = radiansToDirection(newDirectionInRadians);
     float2 lookAheadPosition = agent.position + center + sensorOffset * newDirection;
     // float2 lookAheadPosition =
     //     agent.position + center + sensorOffset * speed * newDirection * deltaTime;
@@ -114,11 +112,19 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
 
     // note: new approach with radians
     Agent agent = AgentsBuffer[id.x];
-    float forwardSum = sense(agent, center, radians(0));
-    float leftSum = sense(agent, center, radians(sensorAngle));
-    float rightSum = sense(agent, center, -radians(sensorAngle));
 
     float forwardRadians = agent.angleInRadians;
+    float leftRadians = agent.angleInRadians + radians(sensorAngle);
+    float rightRadians = agent.angleInRadians - radians(sensorAngle);
+
+    float2 forwardDirection = radiansToDirection(forwardRadians);
+    float2 leftDirection = radiansToDirection(leftRadians);
+    float2 rightDirection = radiansToDirection(rightRadians);
+
+    float forwardSum = sense(agent, center, forwardDirection);
+    float leftSum = sense(agent, center, leftDirection);
+    float rightSum = sense(agent, center, rightDirection);
+
     float leftTurnRadians =  forwardRadians + radians(rotationAngle);
     float rightTurnRadians = forwardRadians - radians(rotationAngle);
 
