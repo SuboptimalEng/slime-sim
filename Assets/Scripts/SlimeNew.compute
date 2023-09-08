@@ -13,6 +13,7 @@ float deltaTime;
 float numOfAgents;
 float sensorAngle;
 float sensorRange;
+float distFromMapEdge;
 
 RWStructuredBuffer<Agent> AgentsBuffer;
 RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
@@ -62,11 +63,11 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     float maxX = dimensions.x / 2;
     float maxY = dimensions.y / 2;
 
-    if (pos.x < -maxX + 10 || pos.x > maxX - 10) {
+    if (pos.x < -maxX + distFromMapEdge || pos.x > maxX - distFromMapEdge) {
         AgentsBuffer[id.x].direction.x *= -1;
         pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
     }
-    if (pos.y < -maxY + 10|| pos.y > maxY - 10) {
+    if (pos.y < -maxY + distFromMapEdge|| pos.y > maxY - distFromMapEdge) {
         AgentsBuffer[id.x].direction.y *= -1;
         pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
     }
@@ -128,9 +129,6 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
 
 float trailDecayRate;
 
-// Texture2D<float4> GradientTexture;
-// SamplerState samplerGradientTexture;
-
 [numthreads(8, 8, 1)]
 void CSTrailMap(uint3 id : SV_DispatchThreadID)
 {
@@ -139,7 +137,7 @@ void CSTrailMap(uint3 id : SV_DispatchThreadID)
 
     // note: doing this first seems more reasonable (kinda)
     // lower the trail map color slightly on each loop to add a "fading" effect
-    trailMapColor = max(0, trailMapColor.x - trailDecayRate);
+    trailMapColor = max(0, trailMapColor.x - trailDecayRate * deltaTime);
 
     // note: if the positionTexture is set to 1, then set trailMapColor to 1 as well
     trailMapColor = max(PositionTexture[id.xy].x, trailMapColor.x);
@@ -184,23 +182,23 @@ void CSDiffuseMap(uint3 id : SV_DispatchThreadID)
 	blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
 	DiffuseMapTexture[id.xy] = max(0, blurredColor);
 
-    // note: both approaches essentially perform the same operation
+    // note: the first approach does not fully clear out blurred colors
+    // note: the second approach fully clears out blurred colors in due time
 	// DiffuseMapTexture[id.xy] = blurredColor * saturate(1 - diffuseDecayRate * deltaTime);
 	DiffuseMapTexture[id.xy] = max(0, blurredColor - diffuseDecayRate * deltaTime);
-    // note: expands
-	// DiffuseMapTexture[id.xy] = max(0, blurredColor + diffuseDecayRate * deltaTime);
 
-    // // note: set the color map here
-    // // we know that x, y, z values are all the same so we can sample from any one of them
+    // note: set the color map here
+    // we know that x, y, z values are all the same so we can sample from any one of them
     float t = DiffuseMapTexture[id.xy].x;
-    // // texture map is 2d but y value is only 1 in height, so we only care about x coord
-    float2 uv = float2(t, 0);
+    // texture map is 2d but y value is only 1 in height, so we only care about x coord
+    float2 textureCoord = float2(max(0.01,t), 0);
 
     // note: not sure why the third method works, but it works
     // todo: maybe figure out why it works
     // float4 color = tex2D(samplerGradientTexture, uv); // dx9
     // float4 color = GradientTexture.Sample(samplerGradientTexture, uv); // dx11
-    float4 color = GradientTexture.SampleLevel(samplerGradientTexture, uv, 0); // dx11
+    float4 color = GradientTexture.SampleLevel(samplerGradientTexture, textureCoord, 0); // dx11
+
 
     ColorMapTexture[id.xy] = color;
 }

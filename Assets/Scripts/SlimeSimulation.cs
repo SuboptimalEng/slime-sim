@@ -32,8 +32,11 @@ public class SlimeSimulation : MonoBehaviour
     [RangeWithStep(8, 256, 8f)]
     public float speed;
 
+    [RangeWithStep(0, 250, 10f)]
+    public float distFromMapEdge;
+
     [Header("Trail")]
-    [RangeWithStep(0, 0.01f, 0.002f)]
+    [RangeWithStep(0, 1.0f, 0.1f)]
     public float trailDecayRate;
 
     [Header("Diffuse")]
@@ -100,7 +103,7 @@ public class SlimeSimulation : MonoBehaviour
             // agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
 
             // part 2 - circle facing inwards
-            float initialRadius = Mathf.Min(width, height) / 2 - 10;
+            float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
             agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
             agents[i].direction = (Vector2.zero - agents[i].position).normalized;
         }
@@ -170,6 +173,7 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetFloat("numOfAgents", numOfAgents);
         computeShader.SetFloat("sensorAngle", sensorAngle);
         computeShader.SetFloat("sensorRange", sensorRange);
+        computeShader.SetFloat("distFromMapEdge", distFromMapEdge);
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle1, "TrailMapTexture", trailMapTexture);
@@ -220,6 +224,10 @@ public class SlimeSimulation : MonoBehaviour
         // meshRenderer.material.mainTexture = trailMapTexture;
         // meshRenderer.material.mainTexture = diffuseMapTexture;
         meshRenderer.material.mainTexture = colorMapTexture;
+
+        // note: render scene to main camera
+        // Camera mainCamera = Camera.main;
+        // mainCamera.targetTexture = colorMapTexture;
 
         // update the "agents" array with the positions + directions from the compute shader
         agentsBuffer.GetData(agents);
