@@ -38,8 +38,7 @@ float sense(Agent agent, float2 center, float2 newDirection)
 
     // note: new look ahead method, add center here
     float2 lookAheadPosition = agent.position + center + sensorOffset * newDirection;
-    // float2 lookAheadPosition =
-    //     agent.position + center + sensorOffset * speed * newDirection * deltaTime;
+
     float sum = 0;
 
     for (int offsetX = -1; offsetX <= 1; offsetX++) {

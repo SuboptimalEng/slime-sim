@@ -103,16 +103,17 @@ public class SlimeSimulation : MonoBehaviour
         for (int i = 0; i < numOfAgentsInt; i++)
         {
             // // part 1 - all agents at center facing outwards
-            // agents[i].position = Vector2.zero;
-            // agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
+            agents[i].position = Vector2.zero;
+            agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
+            agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
 
             // // part 2 - circle facing inwards
-            float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
-            agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
-            agents[i].direction = (Vector2.zero - agents[i].position).normalized;
+            // float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
+            // agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
+            // agents[i].direction = (Vector2.zero - agents[i].position).normalized;
             // // note: atan2 takes y first, then x
-            // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.x, agents[i].direction.y);
-            agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
+            // // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.x, agents[i].direction.y);
+            // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
         }
 
         // set up agentsBuffer to be the correct size
