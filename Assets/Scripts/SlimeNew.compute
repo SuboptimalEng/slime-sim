@@ -15,19 +15,33 @@ float time;
 float deltaTime;
 
 float numOfAgents;
-float sensorDistance;
+float sensorOffset;
 float sensorAngle;
-float turnAngle;
+float rotationAngle;
 
 RWStructuredBuffer<Agent> AgentsBuffer;
 RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
 RWTexture2D<float4> TrailMapTexture; // use RWTexture2D for UAV access
 
-float sense(float2 agentPosition, float2 center, float2 newDirection)
+float2 radiansToDirection(float angleInRadians) {
+    float2 direction;
+    direction.x = cos(angleInRadians);
+    direction.y = sin(angleInRadians);
+    return direction;
+}
+
+float sense(Agent agent, float2 center, float angleOffset)
 {
-    // note: add center here
-    float2 lookAheadPosition =
-        agentPosition + center + sensorDistance * speed * newDirection * deltaTime;
+    // note: old look ahead method, add center here
+    // float2 lookAheadPosition =
+    //     agent.position + center + sensorOffset * speed * newDirection * deltaTime;
+
+    // note: new look ahead method, add center here
+    float newDirectionInRadians = agent.angleInRadians + angleOffset;
+    float2 newDirection = radiansToDirection(newDirectionInRadians);
+    float2 lookAheadPosition = agent.position + center + sensorOffset * newDirection;
+    // float2 lookAheadPosition =
+    //     agent.position + center + sensorOffset * speed * newDirection * deltaTime;
     float sum = 0;
 
     for (int offsetX = -1; offsetX <= 1; offsetX++) {
@@ -51,13 +65,6 @@ uint hash(uint state)
     state ^= state >> 16;
     state *= 2654435769u;
     return state;
-}
-
-float2 radiansToDirection(float angleInRadians) {
-    float2 direction;
-    direction.x = cos(angleInRadians);
-    direction.y = sin(angleInRadians);
-    return direction;
 }
 
 [numthreads(32, 1, 1)]
@@ -106,21 +113,14 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     PositionTexture[int2(pos)] = float4(1, 0, 0, 1);
 
     // note: new approach with radians
-    float forwardRadians = AgentsBuffer[id.x].angleInRadians;
-    float leftSenseRadians = forwardRadians + radians(sensorAngle);
-    float rightSenseRadians = forwardRadians - radians(sensorAngle);
+    Agent agent = AgentsBuffer[id.x];
+    float forwardSum = sense(agent, center, radians(0));
+    float leftSum = sense(agent, center, radians(sensorAngle));
+    float rightSum = sense(agent, center, -radians(sensorAngle));
 
-    float2 forwardVector = radiansToDirection(forwardRadians);
-    float2 leftVector = radiansToDirection(leftSenseRadians);
-    float2 rightVector = radiansToDirection(rightSenseRadians);
-
-    float2 agentPosition = AgentsBuffer[id.x].position;
-    float forwardSum = sense(agentPosition, center, forwardVector);
-    float leftSum = sense(agentPosition, center, leftVector);
-    float rightSum = sense(agentPosition, center, rightVector);
-
-    float leftTurnRadians = forwardRadians + radians(turnAngle);
-    float rightTurnRadians = forwardRadians - radians(turnAngle);
+    float forwardRadians = agent.angleInRadians;
+    float leftTurnRadians =  forwardRadians + radians(rotationAngle);
+    float rightTurnRadians = forwardRadians - radians(rotationAngle);
 
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
@@ -140,6 +140,7 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
         // do nothing
     }
 
+    // // todo: need to refactor the code to use angle offset for sense(...)
     // // note: old approach with tons of matrix multiplication
     // // Convert angles to radians
     // float leftRadians = radians(-sensorAngle);
@@ -157,10 +158,10 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     // float2 forwardVector = AgentsBuffer[id.x].direction;
     // float2 leftVector = mul(leftRotationMatrix, forwardVector);
     // float2 rightVector = mul(rightRotationMatrix, forwardVector);
-    // float2 agentPosition = AgentsBuffer[id.x].position;
-    // float forwardSum = sense(agentPosition, center, forwardVector);
-    // float leftSum = sense(agentPosition, center, leftVector);
-    // float rightSum = sense(agentPosition, center, rightVector);
+    // Agent agent = AgentsBuffer[id.x];
+    // float forwardSum = sense(agent, center, forwardVector);
+    // float leftSum = sense(agent, center, leftVector);
+    // float rightSum = sense(agent, center, rightVector);
     // if (forwardSum >= leftSum && forwardSum >= rightSum) {
     //     // do nothing
     // } else if (forwardSum < leftSum && forwardSum < rightSum) {

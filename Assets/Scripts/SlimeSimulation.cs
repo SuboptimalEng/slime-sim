@@ -48,14 +48,14 @@ public class SlimeSimulation : MonoBehaviour
     public float diffuseDecayRate;
 
     [Header("Sensor")]
-    [RangeWithStep(0, 16, 1f)]
-    public float sensorDistance;
+    [RangeWithStep(0, 50, 1f)]
+    public float sensorOffset;
 
-    [RangeWithStep(0, 180, 10f)]
+    [RangeWithStep(0, 180, 5f)]
     public float sensorAngle;
 
-    [RangeWithStep(0, 180, 10f)]
-    public float turnAngle;
+    [RangeWithStep(0, 180, 5f)]
+    public float rotationAngle;
 
     public Gradient gradient;
     Texture2D gradientTexture;
@@ -181,9 +181,9 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetFloat("deltaTime", Time.deltaTime);
 
         computeShader.SetFloat("numOfAgents", numOfAgents);
-        computeShader.SetFloat("sensorDistance", sensorDistance);
+        computeShader.SetFloat("sensorOffset", sensorOffset);
         computeShader.SetFloat("sensorAngle", sensorAngle);
-        computeShader.SetFloat("turnAngle", turnAngle);
+        computeShader.SetFloat("rotationAngle", rotationAngle);
 
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
