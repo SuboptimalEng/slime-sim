@@ -107,20 +107,20 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
 
     // note: new approach with radians
     float forwardRadians = AgentsBuffer[id.x].angleInRadians;
-    float leftRadians = forwardRadians - radians(sensorAngle);
-    float rightRadians = forwardRadians + radians(sensorAngle);
+    float leftSenseRadians = forwardRadians + radians(sensorAngle);
+    float rightSenseRadians = forwardRadians - radians(sensorAngle);
 
     float2 forwardVector = radiansToDirection(forwardRadians);
-    float2 leftVector = radiansToDirection(leftRadians);
-    float2 rightVector = radiansToDirection(rightRadians);
+    float2 leftVector = radiansToDirection(leftSenseRadians);
+    float2 rightVector = radiansToDirection(rightSenseRadians);
 
     float2 agentPosition = AgentsBuffer[id.x].position;
     float forwardSum = sense(agentPosition, center, forwardVector);
     float leftSum = sense(agentPosition, center, leftVector);
     float rightSum = sense(agentPosition, center, rightVector);
 
-    float leftTurnRadians = forwardRadians - radians(turnAngle);
-    float rightTurnRadians = forwardRadians + radians(turnAngle);
+    float leftTurnRadians = forwardRadians + radians(turnAngle);
+    float rightTurnRadians = forwardRadians - radians(turnAngle);
 
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
