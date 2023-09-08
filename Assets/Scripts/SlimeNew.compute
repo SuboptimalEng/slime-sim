@@ -8,12 +8,14 @@ struct Agent {
 int width;
 int height;
 float speed;
+float distFromMapEdge;
+
 float time;
 float deltaTime;
+
 float numOfAgents;
 float sensorAngle;
-float sensorRange;
-float distFromMapEdge;
+float sensorDistance;
 
 RWStructuredBuffer<Agent> AgentsBuffer;
 RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
@@ -22,7 +24,7 @@ RWTexture2D<float4> TrailMapTexture; // use RWTexture2D for UAV access
 float sense(Agent agent, float2 center, float2 newDirection)
 {
     // note: add center here
-    float2 lookAheadPosition = agent.position + center + sensorRange * speed * newDirection * deltaTime;
+    float2 lookAheadPosition = agent.position + center + sensorDistance * speed * newDirection * deltaTime;
     float sum = 0;
 
     for (int offsetX = -1; offsetX <= 1; offsetX++) {

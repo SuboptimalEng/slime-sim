@@ -51,7 +51,7 @@ public class SlimeSimulation : MonoBehaviour
     public float sensorAngle;
 
     [RangeWithStep(0, 16, 2f)]
-    public float sensorRange;
+    public float sensorDistance;
 
     public Gradient gradient;
     Texture2D gradientTexture;
@@ -168,12 +168,15 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetInt("width", width);
         computeShader.SetInt("height", height);
         computeShader.SetFloat("speed", speed);
+        computeShader.SetFloat("distFromMapEdge", distFromMapEdge);
+
         computeShader.SetFloat("time", Time.time);
         computeShader.SetFloat("deltaTime", Time.deltaTime);
+
         computeShader.SetFloat("numOfAgents", numOfAgents);
         computeShader.SetFloat("sensorAngle", sensorAngle);
-        computeShader.SetFloat("sensorRange", sensorRange);
-        computeShader.SetFloat("distFromMapEdge", distFromMapEdge);
+        computeShader.SetFloat("sensorDistance", sensorDistance);
+
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle1, "TrailMapTexture", trailMapTexture);
