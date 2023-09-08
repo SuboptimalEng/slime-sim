@@ -66,10 +66,34 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     float maxY = dimensions.y / 2;
 
     if (pos.x < -maxX + distFromMapEdge || pos.x > maxX - distFromMapEdge) {
+        // // note: this still makes agents go outside of the map
+        // // Generate a random angle within the range [0, 2 * PI]
+        // // float angle = _RandomSeed * 6.2831853; // 2 * PI
+        // uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+        // float angle = random * 6.2831853; // 2 * PI
+        // // Calculate the direction vector from the angle
+        // float2 direction;
+        // direction.x = cos(angle);
+        // direction.y = sin(angle);
+        // AgentsBuffer[id.x].direction = direction;
+
         AgentsBuffer[id.x].direction.x *= -1;
         pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
     }
     if (pos.y < -maxY + distFromMapEdge|| pos.y > maxY - distFromMapEdge) {
+        // // note: this still makes agents go outside of the map
+        // // Generate a random angle within the range [0, 2 * PI]
+        // // float angle = _RandomSeed * 6.2831853; // 2 * PI
+        // uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+        // float angle = random * 6.2831853; // 2 * PI
+        // // Calculate the direction vector from the angle
+        // float2 direction;
+        // direction.x = cos(angle);
+        // direction.y = sin(angle);
+        // AgentsBuffer[id.x].direction = direction;
+        // Generate a random angle within the range [0, 2 * PI]
+        // float angle = _RandomSeed * 6.2831853; // 2 * PI
+
         AgentsBuffer[id.x].direction.y *= -1;
         pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
     }
