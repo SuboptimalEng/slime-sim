@@ -127,6 +127,8 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
     float leftTurnRadians =  forwardRadians + radians(rotationAngle);
     float rightTurnRadians = forwardRadians - radians(rotationAngle);
 
+    // todo: add randomization fn
+
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
     } else if (forwardSum < leftSum && forwardSum < rightSum) {
