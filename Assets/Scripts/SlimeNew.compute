@@ -30,8 +30,7 @@ float2 radiansToDirection(float angleInRadians) {
     return direction;
 }
 
-float sense(Agent agent, float2 center, float2 newDirection)
-{
+float sense(Agent agent, float2 center, float2 newDirection) {
     // note: old look ahead method, add center here
     // float2 lookAheadPosition =
     //     agent.position + center + sensorOffset * speed * newDirection * deltaTime;
@@ -53,8 +52,7 @@ float sense(Agent agent, float2 center, float2 newDirection)
 }
 
 // Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
-uint hash(uint state)
-{
+uint hash(uint state) {
     state ^= 2747636419u;
     state *= 2654435769u;
     state ^= state >> 16;
@@ -65,8 +63,7 @@ uint hash(uint state)
 }
 
 [numthreads(32, 1, 1)]
-void CSPositionMap(uint3 id : SV_DispatchThreadID)
-{
+void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     // note: prevents undefined behavior that draws agents at the texture map center
     if (float(id.x) >= numOfAgents) {
         return;
@@ -193,8 +190,7 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID)
 float trailDecayRate;
 
 [numthreads(8, 8, 1)]
-void CSTrailMap(uint3 id : SV_DispatchThreadID)
-{
+void CSTrailMap(uint3 id : SV_DispatchThreadID) {
     // todo: check if this is first undefined on the first run (looks like it's not)
     float4 trailMapColor = TrailMapTexture[id.xy];
 
@@ -224,8 +220,7 @@ Texture2D<float4> GradientTexture;
 SamplerState samplerGradientTexture;
 
 [numthreads(8, 8, 1)]
-void CSDiffuseMap(uint3 id : SV_DispatchThreadID)
-{
+void CSDiffuseMap(uint3 id : SV_DispatchThreadID) {
     // note: do not blur on the same map as trail map because that will mess up trail data
     // 3x3 blur
     float4 sum = 0;
