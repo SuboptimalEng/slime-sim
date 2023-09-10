@@ -57,9 +57,6 @@ public class SlimeSimulation : MonoBehaviour
     [RangeWithStep(0, 180, 5f)]
     public float rotationAngle;
 
-    [RangeWithStep(0, 30, 1f)]
-    public float maxRandomAngle;
-
     public Gradient gradient;
     Texture2D gradientTexture;
 
@@ -188,7 +185,6 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetFloat("sensorOffset", sensorOffset);
         computeShader.SetFloat("sensorAngle", sensorAngle);
         computeShader.SetFloat("rotationAngle", rotationAngle);
-        computeShader.SetFloat("maxRandomAngle", maxRandomAngle);
 
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);

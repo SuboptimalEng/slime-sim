@@ -18,7 +18,6 @@ float numOfAgents;
 float sensorOffset;
 float sensorAngle;
 float rotationAngle;
-float maxRandomAngle;
 
 RWStructuredBuffer<Agent> AgentsBuffer;
 RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
@@ -61,6 +60,11 @@ uint hash(uint state) {
     state ^= state >> 16;
     state *= 2654435769u;
     return state;
+}
+
+float scaleToRange01(uint state)
+{
+    return state / 4294967295.0;
 }
 
 [numthreads(32, 1, 1)]
@@ -122,28 +126,47 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     float leftSum = sense(agent, center, leftDirection);
     float rightSum = sense(agent, center, rightDirection);
 
-    float leftTurnRadians =  forwardRadians + radians(rotationAngle);
-    float rightTurnRadians = forwardRadians - radians(rotationAngle);
-
-    // todo: add randomization fn
+    // note: random fn -> https://github.com/SebLague/Slime-Simulation
+    uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+    float randomSteerStrength = scaleToRange01(random);
 
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
     } else if (forwardSum < leftSum && forwardSum < rightSum) {
-        // note: random fn -> https://github.com/SebLague/Slime-Simulation
-        uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
-        if (random % 2 == 0) {
-            AgentsBuffer[id.x].angleInRadians = leftTurnRadians;
-        } else {
-            AgentsBuffer[id.x].angleInRadians = rightTurnRadians;
-        }
+        AgentsBuffer[id.x].angleInRadians +=
+            (randomSteerStrength - 0.5) * 2 * (rotationAngle) * deltaTime;
     } else if (leftSum > rightSum) {
-        AgentsBuffer[id.x].angleInRadians = leftTurnRadians;
+        AgentsBuffer[id.x].angleInRadians +=
+            randomSteerStrength * (rotationAngle) * deltaTime;
     } else if (rightSum > leftSum) {
-        AgentsBuffer[id.x].angleInRadians = rightTurnRadians;
+        AgentsBuffer[id.x].angleInRadians -=
+            randomSteerStrength * (rotationAngle) * deltaTime;
     } else {
         // do nothing
     }
+
+    // todo: add randomization fn
+
+    // // note: old approach, try better one
+    // float leftTurnRadians =  forwardRadians + radians(rotationAngle);
+    // float rightTurnRadians = forwardRadians - radians(rotationAngle);
+    // if (forwardSum >= leftSum && forwardSum >= rightSum) {
+    //     // do nothing
+    // } else if (forwardSum < leftSum && forwardSum < rightSum) {
+    //     // note: random fn -> https://github.com/SebLague/Slime-Simulation
+    //     uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+    //     if (random % 2 == 0) {
+    //         AgentsBuffer[id.x].angleInRadians = leftTurnRadians;
+    //     } else {
+    //         AgentsBuffer[id.x].angleInRadians = rightTurnRadians;
+    //     }
+    // } else if (leftSum > rightSum) {
+    //     AgentsBuffer[id.x].angleInRadians = leftTurnRadians;
+    // } else if (rightSum > leftSum) {
+    //     AgentsBuffer[id.x].angleInRadians = rightTurnRadians;
+    // } else {
+    //     // do nothing
+    // }
 
     // // todo: need to refactor the code to use angle offset for sense(...)
     // // note: old approach with tons of matrix multiplication
