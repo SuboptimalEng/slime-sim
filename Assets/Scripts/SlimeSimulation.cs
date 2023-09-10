@@ -57,6 +57,9 @@ public class SlimeSimulation : MonoBehaviour
     [RangeWithStep(0, 180, 5f)]
     public float rotationAngle;
 
+    [RangeWithStep(0, 30, 1f)]
+    public float maxRandomAngle;
+
     public Gradient gradient;
     Texture2D gradientTexture;
 
@@ -185,6 +188,7 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetFloat("sensorOffset", sensorOffset);
         computeShader.SetFloat("sensorAngle", sensorAngle);
         computeShader.SetFloat("rotationAngle", rotationAngle);
+        computeShader.SetFloat("maxRandomAngle", maxRandomAngle);
 
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
@@ -222,10 +226,6 @@ public class SlimeSimulation : MonoBehaviour
             diffuseMapTexture.height / 8,
             1
         );
-
-        // int kernelHandle4 = computeShader.FindKernel("CSColor");
-        // computeShader.SetTexture(kernelHandle4, "TrailMapTexture", trailMapTexture);
-        // computeShader.SetTexture(kernelHandle4, "ColorMapTexture", colorMapTexture);
 
         // copy diffuseTrailMapTexture into trailMapTexture so that the trailMap
         // can decrement the values in the blurred sections of the trail

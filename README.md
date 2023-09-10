@@ -5,6 +5,7 @@ Simulating slime.
 ## Resources
 
 - [Sebastian Lague's Slime Simulation](https://github.com/SebLague/Slime-Simulation)
+- [Simulife Hub's Slime Mold Simulation Experiment](https://www.youtube.com/watch?v=qryINYcgO1s)
 
 ## License
 
