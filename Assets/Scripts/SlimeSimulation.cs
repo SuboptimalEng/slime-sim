@@ -143,6 +143,33 @@ public class SlimeSimulation : MonoBehaviour
         gradientTexture.Apply();
     }
 
+    public void RandomizeGradient()
+    {
+        if (gradient == null)
+        {
+            return;
+        }
+
+        // Randomize color keys
+        GradientColorKey[] colorKeys = gradient.colorKeys;
+        for (int i = 0; i < colorKeys.Length; i++)
+        {
+            colorKeys[i].color = UnityEngine.Random.ColorHSV();
+        }
+
+        // Randomize alpha keys
+        GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
+        for (int i = 0; i < alphaKeys.Length; i++)
+        {
+            alphaKeys[i].alpha = UnityEngine.Random.Range(0.0f, 1.0f);
+        }
+
+        // Assign the modified keys back to the gradient
+        gradient.SetKeys(colorKeys, alphaKeys);
+
+        InitializeGradientTexture();
+    }
+
     void PrintAgentsPositions()
     {
         string[] arr = new string[agents.Length];

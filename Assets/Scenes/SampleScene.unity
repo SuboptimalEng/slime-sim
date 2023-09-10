@@ -520,29 +520,29 @@ MonoBehaviour:
   width: 512
   height: 512
   numOfAgents: 793728
-  speed: 32
+  speed: 64
   distFromMapEdge: 10
-  trailDecayRate: 0.1
+  trailDecayRate: 0.2
   diffuseRate: 0.8
   diffuseDecayRate: 0.2
-  sensorOffset: 23
+  sensorOffset: 8
   sensorAngle: 45
   rotationAngle: 45
   gradient:
     serializedVersion: 2
-    key0: {r: 0, g: 0, b: 0, a: 1}
-    key1: {r: 1, g: 1, b: 1, a: 1}
-    key2: {r: 1, g: 0, b: 0, a: 0}
-    key3: {r: 0.17702027, g: 0.3921692, b: 0.735849, a: 0}
-    key4: {r: 0, g: 0, b: 0, a: 0}
+    key0: {r: 0.7926146, g: 0.90852654, b: 0.9142901, a: 0.36093086}
+    key1: {r: 0.5138759, g: 0.5221086, b: 0.16020748, a: 0.19963491}
+    key2: {r: 0.23941371, g: 0.19260341, b: 0.24168316, a: 0}
+    key3: {r: 0.045006927, g: 0.024450313, b: 0.09211875, a: 0}
+    key4: {r: 0.23969164, g: 0.41196543, b: 0.03114283, a: 0}
     key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
     ctime0: 6554
-    ctime1: 32768
-    ctime2: 58982
-    ctime3: 60524
-    ctime4: 0
+    ctime1: 19661
+    ctime2: 32768
+    ctime3: 45875
+    ctime4: 58982
     ctime5: 0
     ctime6: 0
     ctime7: 0
@@ -555,7 +555,7 @@ MonoBehaviour:
     atime6: 0
     atime7: 0
     m_Mode: 0
-    m_NumColorKeys: 3
+    m_NumColorKeys: 5
     m_NumAlphaKeys: 2
 --- !u!1 &2131114175
 GameObject:

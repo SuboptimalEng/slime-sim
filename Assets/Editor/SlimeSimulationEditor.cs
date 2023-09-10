@@ -44,6 +44,13 @@ public class SlimeSimulationEditor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
+        // Add a button to the Inspector
+        if (GUILayout.Button("Randomize Gradient"))
+        {
+            // Perform your custom action when the button is clicked
+            slimeSimulation.RandomizeGradient();
+        }
+
         // note: runs the method whenever any field changes
         // using (var check = new EditorGUI.ChangeCheckScope())
         // {
