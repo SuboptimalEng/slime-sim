@@ -517,21 +517,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 9f5bef98d1fba40789460c1fc123d972, type: 3}
-  width: 256
-  height: 256
-  numOfAgents: 992
-  speed: 32
+  width: 1024
+  height: 1024
+  numOfAgents: 100000
+  speed: 128
   distFromMapEdge: 10
-  trailDecayRate: 0.2
+  trailDecayRate: 0.4
   diffuseRate: 0.8
   diffuseDecayRate: 0.2
   speciesSettingsList:
-  - sensorOffset: 22
-    sensorAngle: 90
-    rotationAngle: 140
-  - sensorOffset: 42
-    sensorAngle: 175
-    rotationAngle: 170
+  - sensorOffset: 50
+    sensorAngle: 180
+    rotationAngle: 180
+    color: {r: 0.764151, g: 0, b: 0, a: 1}
+  - sensorOffset: 4
+    sensorAngle: 40
+    rotationAngle: 40
+    color: {r: 0, g: 0.27493212, b: 0.8113208, a: 1}
   gradient:
     serializedVersion: 2
     key0: {r: 0.49507472, g: 0.31337014, b: 0.7618078, a: 1}
