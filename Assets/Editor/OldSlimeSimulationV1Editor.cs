@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEditor;
 
 // code by chatGPT
-[CustomEditor(typeof(SlimeSimulation))]
-public class SlimeSimulationEditor : Editor
+[CustomEditor(typeof(OldSlimeSimulationV1))]
+public class OldSlimeSimulationV1Editor : Editor
 {
-    SlimeSimulation slimeSimulation;
+    OldSlimeSimulationV1 slimeSimulationV1;
     SerializedProperty numOfAgents;
     float prevNumOfAgents;
 
@@ -36,7 +36,7 @@ public class SlimeSimulationEditor : Editor
             // Apply any modifications to the serialized object
             serializedObject.ApplyModifiedProperties();
 
-            slimeSimulation.InitializeAgents();
+            slimeSimulationV1.InitializeAgents();
         }
         else
         {
@@ -48,7 +48,7 @@ public class SlimeSimulationEditor : Editor
         if (GUILayout.Button("Randomize Gradient"))
         {
             // Perform your custom action when the button is clicked
-            slimeSimulation.RandomizeGradient();
+            slimeSimulationV1.RandomizeGradient();
         }
 
         // note: runs the method whenever any field changes
@@ -64,7 +64,7 @@ public class SlimeSimulationEditor : Editor
 
     void OnEnable()
     {
-        slimeSimulation = target as SlimeSimulation;
+        slimeSimulationV1 = target as OldSlimeSimulationV1;
         numOfAgents = serializedObject.FindProperty("numOfAgents");
         prevNumOfAgents = numOfAgents.floatValue;
     }
