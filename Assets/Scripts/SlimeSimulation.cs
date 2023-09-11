@@ -8,10 +8,11 @@ public struct Agent
     public Vector2 position;
     public float angleInRadians;
     public int speciesIndex;
+    public Vector4 speciesMask;
 
     public static int Size
     {
-        get { return sizeof(float) * 2 + sizeof(float) + sizeof(int); }
+        get { return sizeof(float) * 2 + sizeof(float) + sizeof(int) + sizeof(float) * 4; }
     }
 }
 
@@ -27,9 +28,11 @@ public struct SpeciesSettings
     [RangeWithStep(0, 180, 5f)]
     public float rotationAngle;
 
+    public Color color;
+
     public static int Size
     {
-        get { return sizeof(float) * 3; }
+        get { return sizeof(float) * 3 + sizeof(float) * 4; }
     }
 }
 
@@ -65,13 +68,17 @@ public class SlimeSimulation : MonoBehaviour
     [RangeWithStep(0, 1.0f, 0.1f)]
     public float diffuseDecayRate;
 
-    public SpeciesSettings speciesSettings;
+    public List<SpeciesSettings> speciesSettingsList;
 
     [Header("Color")]
     public Gradient gradient;
 
     Agent[] agents;
     ComputeBuffer agentsBuffer;
+
+    SpeciesSettings[] speciesSettings;
+    ComputeBuffer speciesSettingsBuffer;
+
     RenderTexture positionTexture;
     RenderTexture trailMapTexture;
     RenderTexture diffuseMapTexture;
@@ -80,6 +87,11 @@ public class SlimeSimulation : MonoBehaviour
 
     void Start()
     {
+        // if (speciesSettingsList == null)
+        // {
+        //     speciesSettingsList = new List<SpeciesSettings>();
+        // }
+
         // set depth to 0 for 2D textures
         int depth = 0;
         RenderTextureFormat format = RenderTextureFormat.ARGB32;
@@ -103,7 +115,23 @@ public class SlimeSimulation : MonoBehaviour
         colorMapTexture.Create();
 
         InitializeAgents();
+        InitializeSpeciesSettings();
         InitializeGradientTexture();
+    }
+
+    public void InitializeSpeciesSettings()
+    {
+        int numOfSpecies = speciesSettingsList.Count;
+        speciesSettings = new SpeciesSettings[numOfSpecies];
+        for (int i = 0; i < numOfSpecies; i++)
+        {
+            speciesSettings[i].sensorOffset = speciesSettingsList[i].sensorOffset;
+            speciesSettings[i].sensorAngle = speciesSettingsList[i].sensorAngle;
+            speciesSettings[i].rotationAngle = speciesSettingsList[i].rotationAngle;
+            Color c = speciesSettingsList[i].color;
+            speciesSettings[i].color = new Vector4(c.r, c.g, c.b, c.a);
+        }
+        speciesSettingsBuffer = new ComputeBuffer(numOfSpecies, SpeciesSettings.Size);
     }
 
     public void InitializeAgents()
@@ -117,7 +145,12 @@ public class SlimeSimulation : MonoBehaviour
             agents[i].position = Vector2.zero;
             Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
             agents[i].angleInRadians = Mathf.Atan2(direction.y, direction.x);
-            agents[i].speciesIndex = 0;
+
+            float randomValue = UnityEngine.Random.Range(0f, 2f);
+            int randomZeroOrOne = Mathf.FloorToInt(randomValue);
+            agents[i].speciesIndex = randomZeroOrOne;
+            agents[i].speciesMask =
+                randomZeroOrOne == 0 ? new Vector4(1, 0, 0, 0) : new Vector4(0, 1, 0, 0);
 
             // part 2 - circle facing inwards
             // float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
@@ -182,6 +215,28 @@ public class SlimeSimulation : MonoBehaviour
         InitializeGradientTexture();
     }
 
+    public void RandomizeSpeciesSettings()
+    {
+        for (int i = 0; i < speciesSettingsList.Count; i++)
+        {
+            SpeciesSettings s = speciesSettingsList[i];
+
+            // speciesSettingsList[i].color = new Color(1, 1, 1, 1);
+            s.sensorOffset = UnityEngine.Random.Range(1, 50);
+            s.sensorAngle = UnityEngine.Random.Range(1, 180);
+            s.rotationAngle = UnityEngine.Random.Range(1, 180);
+
+            speciesSettingsList[i] = s;
+
+            // speciesSettings[i].sensorAngle = speciesSettingsList[i].sensorAngle;
+            // speciesSettings[i].rotationAngle = speciesSettingsList[i].rotationAngle;
+            // Color c = speciesSettingsList[i].color;
+            // speciesSettings[i].color = new Vector4(c.r, c.g, c.b, c.a);
+        }
+
+        InitializeSpeciesSettings();
+    }
+
     void PrintAgentsPositions()
     {
         string[] arr = new string[agents.Length];
@@ -210,6 +265,7 @@ public class SlimeSimulation : MonoBehaviour
 
         // set the "agents buffer" array with the latest position + direction data from "agents"
         agentsBuffer.SetData(agents);
+        speciesSettingsBuffer.SetData(speciesSettings);
 
         int kernelHandle1 = computeShader.FindKernel("CSPositionMap");
         computeShader.SetInt("width", width);
@@ -221,11 +277,11 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetFloat("deltaTime", Time.deltaTime);
 
         computeShader.SetFloat("numOfAgents", numOfAgents);
-        computeShader.SetFloat("sensorOffset", speciesSettings.sensorOffset);
-        computeShader.SetFloat("sensorAngle", speciesSettings.sensorAngle);
-        computeShader.SetFloat("rotationAngle", speciesSettings.rotationAngle);
+        // todo: update this
+        // computeShader.SetFloat("numOfSpecies", 2);
 
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
+        computeShader.SetBuffer(kernelHandle1, "SpeciesSettingsBuffer", speciesSettingsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle1, "TrailMapTexture", trailMapTexture);
         computeShader.Dispatch(kernelHandle1, Mathf.RoundToInt(numOfAgents) / 32, 1, 1);
@@ -234,6 +290,7 @@ public class SlimeSimulation : MonoBehaviour
         // we don't need to create the variable for #pragma kernel CSTrailMap
         int kernelHandle2 = computeShader.FindKernel("CSTrailMap");
         computeShader.SetFloat("trailDecayRate", trailDecayRate);
+        computeShader.SetBuffer(kernelHandle2, "SpeciesSettingsBuffer", speciesSettingsBuffer);
         computeShader.SetTexture(kernelHandle2, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle2, "TrailMapTexture", trailMapTexture);
         computeShader.Dispatch(
@@ -248,13 +305,12 @@ public class SlimeSimulation : MonoBehaviour
         computeShader.SetInt("height", height);
         computeShader.SetFloat("diffuseRate", diffuseRate);
         computeShader.SetFloat("diffuseDecayRate", diffuseDecayRate);
+        computeShader.SetBuffer(kernelHandle3, "SpeciesSettingsBuffer", speciesSettingsBuffer);
         computeShader.SetTexture(kernelHandle3, "PositionTexture", positionTexture);
         computeShader.SetTexture(kernelHandle3, "TrailMapTexture", trailMapTexture);
         computeShader.SetTexture(kernelHandle3, "DiffuseMapTexture", diffuseMapTexture);
-
         computeShader.SetTexture(kernelHandle3, "ColorMapTexture", colorMapTexture);
         computeShader.SetTexture(kernelHandle3, "GradientTexture", gradientTexture);
-
         computeShader.Dispatch(
             kernelHandle3,
             diffuseMapTexture.width / 8,
@@ -286,7 +342,12 @@ public class SlimeSimulation : MonoBehaviour
         {
             return;
         }
+        if (speciesSettingsBuffer == null)
+        {
+            return;
+        }
         agentsBuffer.Release();
+        speciesSettingsBuffer.Release();
         Destroy(gradientTexture);
     }
 }

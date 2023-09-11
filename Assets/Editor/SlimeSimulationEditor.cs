@@ -44,6 +44,16 @@ public class SlimeSimulationEditor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
+        if (GUILayout.Button("Randomize Species Settings"))
+        {
+            slimeSimulation.RandomizeSpeciesSettings();
+        }
+
+        if (GUILayout.Button("Apply Settings"))
+        {
+            slimeSimulation.InitializeSpeciesSettings();
+        }
+
         // Add a button to the Inspector
         if (GUILayout.Button("Randomize Gradient"))
         {
@@ -57,7 +67,7 @@ public class SlimeSimulationEditor : Editor
         //     base.OnInspectorGUI();
         //     if (check.changed)
         //     {
-        //         slimeSimulation.ResetAgents();
+        //         slimeSimulation.InitializeAgents();
         //     }
         // }
     }
