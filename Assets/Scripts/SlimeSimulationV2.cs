@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct AgentV1
+public struct AgentV2
 {
     public Vector2 position;
     public Vector2 direction;
@@ -15,7 +15,7 @@ public struct AgentV1
     }
 }
 
-public class SlimeSimulationV1 : MonoBehaviour
+public class SlimeSimulationV2 : MonoBehaviour
 {
     public ComputeShader computeShader;
 
@@ -60,7 +60,7 @@ public class SlimeSimulationV1 : MonoBehaviour
     [Header("Color")]
     public Gradient gradient;
 
-    AgentV1[] agents;
+    AgentV2[] agents;
     ComputeBuffer agentsBuffer;
     RenderTexture positionTexture;
     RenderTexture trailMapTexture;
@@ -100,7 +100,7 @@ public class SlimeSimulationV1 : MonoBehaviour
     {
         // set up a few agents to simulate
         int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
-        agents = new AgentV1[numOfAgentsInt];
+        agents = new AgentV2[numOfAgentsInt];
         for (int i = 0; i < numOfAgentsInt; i++)
         {
             // // part 1 - all agents at center facing outwards
@@ -118,7 +118,7 @@ public class SlimeSimulationV1 : MonoBehaviour
         }
 
         // set up agentsBuffer to be the correct size
-        agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV1.Size);
+        agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV2.Size);
     }
 
     void InitializeGradientTexture()

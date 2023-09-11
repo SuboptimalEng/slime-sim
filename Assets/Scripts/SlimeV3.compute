@@ -1,14 +1,210 @@
-// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+#pragma kernel CSPositionMap
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-RWTexture2D<float4> Result;
+struct Agent {
+    float2 position;
+    float angleInRadians;
+};
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+int width;
+int height;
+float speed;
+float distFromMapEdge;
+
+float time;
+float deltaTime;
+
+float numOfAgents;
+float sensorOffset;
+float sensorAngle;
+float rotationAngle;
+
+RWStructuredBuffer<Agent> AgentsBuffer;
+RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
+RWTexture2D<float4> TrailMapTexture; // use RWTexture2D for UAV access
+
+float2 radiansToDirection(float angleInRadians) {
+    float2 direction;
+    direction.x = cos(angleInRadians);
+    direction.y = sin(angleInRadians);
+    return direction;
+}
+
+float sense(Agent agent, float2 center, float2 newDirection) {
+    // note: old look ahead method, add center here
+    // float2 sensorPosition =
+    //     agent.position + center + sensorOffset * speed * newDirection * deltaTime;
+
+    // note: new look ahead method, add center here
+    float2 sensorPosition = agent.position + center + sensorOffset * newDirection;
+
+    float sum = 0;
+
+    for (int offsetX = -1; offsetX <= 1; offsetX++) {
+        for (int offsetY = -1; offsetY <= 1; offsetY++) {
+			int sampleX = min(width-1, max(0, sensorPosition.x + offsetX));
+			int sampleY = min(height-1, max(0, sensorPosition.y + offsetY));
+			sum += TrailMapTexture[int2(sampleX,sampleY)].x;
+        }
+    }
+
+    return sum;
+}
+
+// Hash function www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
+uint hash(uint state) {
+    state ^= 2747636419u;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    state ^= state >> 16;
+    state *= 2654435769u;
+    return state;
+}
+
+float scaleToRange01(uint state)
 {
-    // TODO: insert actual code here!
+    return state / 4294967295.0;
+}
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+[numthreads(32, 1, 1)]
+void CSPositionMap(uint3 id : SV_DispatchThreadID) {
+    // note: prevents undefined behavior that draws agents at the texture map center
+    if (float(id.x) >= numOfAgents) {
+        return;
+    }
+
+    float2 agentDirection = radiansToDirection(AgentsBuffer[id.x].angleInRadians);
+    float2 pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
+
+    // note: old method using direction
+    // float2 pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
+
+    uint2 dimensions;
+    PositionTexture.GetDimensions(dimensions.x, dimensions.y);
+    float maxX = dimensions.x / 2;
+    float maxY = dimensions.y / 2;
+
+    if (pos.x < -maxX + distFromMapEdge || pos.x > maxX - distFromMapEdge) {
+        agentDirection.x *= -1;
+        AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
+        pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
+    }
+    if (pos.y < -maxY + distFromMapEdge || pos.y > maxY - distFromMapEdge) {
+        agentDirection.y *= -1;
+        AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
+        pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
+    }
+
+    AgentsBuffer[id.x].position = pos;
+    float2 center = dimensions / 2;
+    pos += center;
+    PositionTexture[int2(pos)] = float4(1, 0, 0, 1);
+
+    Agent agent = AgentsBuffer[id.x];
+
+    float forwardRadians = agent.angleInRadians;
+    float leftRadians = agent.angleInRadians + radians(sensorAngle);
+    float rightRadians = agent.angleInRadians - radians(sensorAngle);
+
+    float2 forwardDirection = radiansToDirection(forwardRadians);
+    float2 leftDirection = radiansToDirection(leftRadians);
+    float2 rightDirection = radiansToDirection(rightRadians);
+
+    float forwardSum = sense(agent, center, forwardDirection);
+    float leftSum = sense(agent, center, leftDirection);
+    float rightSum = sense(agent, center, rightDirection);
+
+    // note: random fn -> https://github.com/SebLague/Slime-Simulation
+    uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+    float randomSteerStrength = scaleToRange01(random);
+
+    if (forwardSum >= leftSum && forwardSum >= rightSum) {
+        // do nothing
+    } else if (forwardSum < leftSum && forwardSum < rightSum) {
+        AgentsBuffer[id.x].angleInRadians +=
+            (randomSteerStrength - 0.5) * 2 * (rotationAngle) * deltaTime;
+    } else if (leftSum > rightSum) {
+        AgentsBuffer[id.x].angleInRadians +=
+            randomSteerStrength * (rotationAngle) * deltaTime;
+    } else if (rightSum > leftSum) {
+        AgentsBuffer[id.x].angleInRadians -=
+            randomSteerStrength * (rotationAngle) * deltaTime;
+    } else {
+        // do nothing
+    }
+}
+
+#pragma kernel CSTrailMap
+
+float trailDecayRate;
+
+[numthreads(8, 8, 1)]
+void CSTrailMap(uint3 id : SV_DispatchThreadID) {
+    // todo: check if this is first undefined on the first run (looks like it's not)
+    float4 trailMapColor = TrailMapTexture[id.xy];
+
+    // note: doing this first seems more reasonable (kinda)
+    // lower the trail map color slightly on each loop to add a "fading" effect
+    trailMapColor = max(0, trailMapColor.x - trailDecayRate * deltaTime);
+
+    // note: if the positionTexture is set to 1, then set trailMapColor to 1 as well
+    trailMapColor = max(PositionTexture[id.xy].x, trailMapColor.x);
+
+    TrailMapTexture[id.xy] = trailMapColor;
+}
+
+
+// NOTE: DO THIS IN A SEPARATE PASS
+#pragma kernel CSDiffuseMap
+
+float diffuseRate;
+float diffuseDecayRate;
+
+RWTexture2D<float4> DiffuseMapTexture;
+RWTexture2D<float4> ColorMapTexture;
+
+// note: example sampling from a texture map!!!
+Texture2D<float4> GradientTexture;
+// note: this is required? not sure exactly how it works
+SamplerState samplerGradientTexture;
+
+[numthreads(8, 8, 1)]
+void CSDiffuseMap(uint3 id : SV_DispatchThreadID) {
+    // note: do not blur on the same map as trail map because that will mess up trail data
+    // 3x3 blur
+    float4 sum = 0;
+    float blurRadius = 1;
+	for (int offsetX = -blurRadius; offsetX <= blurRadius; offsetX++) {
+		for (int offsetY = -blurRadius; offsetY <= blurRadius; offsetY++) {
+			int sampleX = min(width-1, max(0, id.x + offsetX));
+			int sampleY = min(height-1, max(0, id.y + offsetY));
+			sum += TrailMapTexture[int2(sampleX,sampleY)];
+		}
+	}
+
+	float4 blurredColor = sum / 9;
+    float4 originalColor = TrailMapTexture[id.xy];
+	// float diffuseWeight = saturate(diffuseRate * deltaTime);
+	// blurredColor = originalColor * (1 - diffuseWeight) + blurredColor * (diffuseWeight);
+	blurredColor = originalColor * (1 - diffuseRate) + blurredColor * diffuseRate;
+	DiffuseMapTexture[id.xy] = max(0, blurredColor);
+
+    // note: the first approach does not fully clear out blurred colors
+    // note: the second approach fully clears out blurred colors in due time
+	// DiffuseMapTexture[id.xy] = blurredColor * saturate(1 - diffuseDecayRate * deltaTime);
+	DiffuseMapTexture[id.xy] = max(0, blurredColor - diffuseDecayRate * deltaTime);
+
+    // note: set the color map here
+    // we know that x, y, z values are all the same so we can sample from any one of them
+    float t = DiffuseMapTexture[id.xy].x;
+    // texture map is 2d but y value is only 1 in height, so we only care about x coord
+    float2 textureCoord = float2(max(0.01,t), 0);
+
+    // note: not sure why the third method works, but it works
+    // todo: maybe figure out why it works
+    // float4 color = tex2D(samplerGradientTexture, uv); // dx9
+    // float4 color = GradientTexture.Sample(samplerGradientTexture, uv); // dx11
+    float4 color = GradientTexture.SampleLevel(samplerGradientTexture, textureCoord, 0); // dx11
+
+    ColorMapTexture[id.xy] = color;
 }
