@@ -4,8 +4,9 @@ Simulating slime.
 
 ## Resources
 
+- [Jeff Jones' Physarum Research Paper](https://uwe-repository.worktribe.com/output/980579)
 - [Sebastian Lague's Slime Simulation](https://github.com/SebLague/Slime-Simulation)
-- [Simulife Hub's Slime Mold Simulation Experiment](https://www.youtube.com/watch?v=qryINYcgO1s)
+- [Simulife Hub's Slime Mold Simulation](https://www.youtube.com/watch?v=qryINYcgO1s)
 
 ## License
 
