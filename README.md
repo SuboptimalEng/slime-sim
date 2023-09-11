@@ -1,4 +1,4 @@
-# 🐌 Slime Sim
+# 🍄 Slime Sim
 
 Simulating slime.
 
