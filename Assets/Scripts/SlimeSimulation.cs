@@ -48,7 +48,7 @@ public class SlimeSimulation : MonoBehaviour
     public float diffuseDecayRate;
 
     [Header("Sensor")]
-    [RangeWithStep(0, 50, 1f)]
+    [RangeWithStep(0, 50, 2f)]
     public float sensorOffset;
 
     [RangeWithStep(0, 180, 5f)]
@@ -57,8 +57,8 @@ public class SlimeSimulation : MonoBehaviour
     [RangeWithStep(0, 180, 5f)]
     public float rotationAngle;
 
+    [Header("Color")]
     public Gradient gradient;
-    Texture2D gradientTexture;
 
     Agent[] agents;
     ComputeBuffer agentsBuffer;
@@ -66,6 +66,7 @@ public class SlimeSimulation : MonoBehaviour
     RenderTexture trailMapTexture;
     RenderTexture diffuseMapTexture;
     RenderTexture colorMapTexture;
+    Texture2D gradientTexture;
 
     void Start()
     {
@@ -161,7 +162,8 @@ public class SlimeSimulation : MonoBehaviour
         GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
         for (int i = 0; i < alphaKeys.Length; i++)
         {
-            alphaKeys[i].alpha = UnityEngine.Random.Range(0.0f, 1.0f);
+            // alphaKeys[i].alpha = UnityEngine.Random.Range(0.0f, 1.0f);
+            alphaKeys[i].alpha = 1;
         }
 
         // Assign the modified keys back to the gradient
