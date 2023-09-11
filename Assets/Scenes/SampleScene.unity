@@ -513,29 +513,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 1383880957}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e7cc68cd89298425c97c94c1dde86d13, type: 3}
+  m_Script: {fileID: 11500000, guid: 0800fb77764cf41d29a19c29dd82dca0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  computeShader: {fileID: 7200000, guid: 02abb0d27b9a84ab48dda2e136b5a48b, type: 3}
+  computeShader: {fileID: 7200000, guid: 6e829d898b31745fcbf5a6f64b41ee59, type: 3}
   width: 1024
   height: 1024
-  numOfAgents: 793728
+  numOfAgents: 100000
   speed: 128
   distFromMapEdge: 10
   trailDecayRate: 0.2
   diffuseRate: 0.8
   diffuseDecayRate: 0.2
-  sensorOffset: 8
-  sensorAngle: 120
-  rotationAngle: 30
+  sensorOffset: 24
+  sensorAngle: 100
+  rotationAngle: 45
   gradient:
     serializedVersion: 2
-    key0: {r: 0.03753448, g: 0.007699232, b: 0.036879957, a: 1}
-    key1: {r: 0.7877475, g: 0.4826858, b: 0.7720844, a: 1}
-    key2: {r: 0.0065500746, g: 0.00312124, b: 0.0063721477, a: 0}
-    key3: {r: 0.13388912, g: 0.53189725, b: 0.054318067, a: 0}
-    key4: {r: 0.55549383, g: 0.704469, b: 0.28645697, a: 0}
-    key5: {r: 0.55549383, g: 0.704469, b: 0.28645697, a: 0}
+    key0: {r: 0.9213172, g: 0.89677066, b: 0.9272547, a: 1}
+    key1: {r: 0.8731991, g: 0.41838783, b: 0.86446613, a: 1}
+    key2: {r: 0.18660094, g: 0.043581575, b: 0.120961785, a: 0}
+    key3: {r: 0.7214647, g: 0.036844324, b: 0.25728917, a: 0}
+    key4: {r: 0.370289, g: 0.88994634, b: 0.30191094, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
     ctime0: 6554
@@ -543,7 +543,7 @@ MonoBehaviour:
     ctime2: 32768
     ctime3: 45875
     ctime4: 58982
-    ctime5: 58982
+    ctime5: 0
     ctime6: 0
     ctime7: 0
     atime0: 0
@@ -586,10 +586,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2131114175}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e7cc68cd89298425c97c94c1dde86d13, type: 3}
+  m_Script: {fileID: 11500000, guid: 0800fb77764cf41d29a19c29dd82dca0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  computeShader: {fileID: 7200000, guid: 02abb0d27b9a84ab48dda2e136b5a48b, type: 3}
+  computeShader: {fileID: 7200000, guid: 6e829d898b31745fcbf5a6f64b41ee59, type: 3}
   width: 1920
   height: 1920
   numOfAgents: 806592
