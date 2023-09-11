@@ -3,19 +3,37 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct AgentV2
+public struct Agent
 {
     public Vector2 position;
-    public Vector2 direction;
     public float angleInRadians;
+    public int speciesIndex;
 
     public static int Size
     {
-        get { return sizeof(float) * 2 * 2 + sizeof(float); }
+        get { return sizeof(float) * 2 + sizeof(float) + sizeof(int); }
     }
 }
 
-public class SlimeSimulationV2 : MonoBehaviour
+[System.Serializable]
+public struct SpeciesSettings
+{
+    [RangeWithStep(0, 50, 2f)]
+    public float sensorOffset;
+
+    [RangeWithStep(0, 180, 5f)]
+    public float sensorAngle;
+
+    [RangeWithStep(0, 180, 5f)]
+    public float rotationAngle;
+
+    public static int Size
+    {
+        get { return sizeof(float) * 3; }
+    }
+}
+
+public class SlimeSimulation : MonoBehaviour
 {
     public ComputeShader computeShader;
 
@@ -47,20 +65,12 @@ public class SlimeSimulationV2 : MonoBehaviour
     [RangeWithStep(0, 1.0f, 0.1f)]
     public float diffuseDecayRate;
 
-    [Header("Sensor")]
-    [RangeWithStep(0, 50, 2f)]
-    public float sensorOffset;
-
-    [RangeWithStep(0, 180, 5f)]
-    public float sensorAngle;
-
-    [RangeWithStep(0, 180, 5f)]
-    public float rotationAngle;
+    public SpeciesSettings speciesSettings;
 
     [Header("Color")]
     public Gradient gradient;
 
-    AgentV2[] agents;
+    Agent[] agents;
     ComputeBuffer agentsBuffer;
     RenderTexture positionTexture;
     RenderTexture trailMapTexture;
@@ -100,25 +110,25 @@ public class SlimeSimulationV2 : MonoBehaviour
     {
         // set up a few agents to simulate
         int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
-        agents = new AgentV2[numOfAgentsInt];
+        agents = new Agent[numOfAgentsInt];
         for (int i = 0; i < numOfAgentsInt; i++)
         {
-            // // part 1 - all agents at center facing outwards
+            // part 1 - all agents at center facing outwards
             agents[i].position = Vector2.zero;
-            agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
-            agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
+            Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
+            agents[i].angleInRadians = Mathf.Atan2(direction.y, direction.x);
+            agents[i].speciesIndex = 0;
 
-            // // part 2 - circle facing inwards
+            // part 2 - circle facing inwards
             // float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
             // agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
-            // agents[i].direction = (Vector2.zero - agents[i].position).normalized;
-            // // note: atan2 takes y first, then x
-            // // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.x, agents[i].direction.y);
-            // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
+            // Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
+            // agents[i].angleInRadians = Mathf.Atan2(direction.y, direction.x);
+            // agents[i].speciesIndex = 0;
         }
 
         // set up agentsBuffer to be the correct size
-        agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV2.Size);
+        agentsBuffer = new ComputeBuffer(numOfAgentsInt, Agent.Size);
     }
 
     void InitializeGradientTexture()
@@ -211,9 +221,9 @@ public class SlimeSimulationV2 : MonoBehaviour
         computeShader.SetFloat("deltaTime", Time.deltaTime);
 
         computeShader.SetFloat("numOfAgents", numOfAgents);
-        computeShader.SetFloat("sensorOffset", sensorOffset);
-        computeShader.SetFloat("sensorAngle", sensorAngle);
-        computeShader.SetFloat("rotationAngle", rotationAngle);
+        computeShader.SetFloat("sensorOffset", speciesSettings.sensorOffset);
+        computeShader.SetFloat("sensorAngle", speciesSettings.sensorAngle);
+        computeShader.SetFloat("rotationAngle", speciesSettings.rotationAngle);
 
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);

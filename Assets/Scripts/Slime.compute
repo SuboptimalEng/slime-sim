@@ -3,6 +3,7 @@
 struct Agent {
     float2 position;
     float angleInRadians;
+    int speciesIndex;
 };
 
 int width;
