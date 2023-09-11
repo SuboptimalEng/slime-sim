@@ -15,7 +15,7 @@ public struct Agent
     }
 }
 
-public class SlimeSimulation : MonoBehaviour
+public class SlimeSimulationV1 : MonoBehaviour
 {
     public ComputeShader computeShader;
 
