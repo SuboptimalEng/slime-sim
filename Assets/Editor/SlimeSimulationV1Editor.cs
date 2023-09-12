@@ -36,7 +36,7 @@ public class SlimeSimulationV1Editor : Editor
             // Apply any modifications to the serialized object
             serializedObject.ApplyModifiedProperties();
 
-            slimeSimulationV1.InitializeAgents();
+            slimeSimulationV1.ResetAgents();
         }
         else
         {
@@ -49,6 +49,11 @@ public class SlimeSimulationV1Editor : Editor
         {
             // Perform your custom action when the button is clicked
             slimeSimulationV1.RandomizeGradient();
+        }
+
+        if (GUILayout.Button("Transition Gradients"))
+        {
+            slimeSimulationV1.TransitionGradients();
         }
 
         // note: runs the method whenever any field changes

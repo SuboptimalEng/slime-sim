@@ -60,6 +60,14 @@ public class SlimeSimulationV1 : MonoBehaviour
     [Header("Color")]
     public Gradient gradient;
 
+    public List<Gradient> gradients;
+
+    int currGradientIndex = 0;
+    int nextGradientIndex = 0;
+    float lerpDuration = 1;
+    float lerpStartTime = 0;
+    bool startGradientTransition = false;
+
     AgentV1[] agents;
     ComputeBuffer agentsBuffer;
     RenderTexture positionTexture;
@@ -92,11 +100,11 @@ public class SlimeSimulationV1 : MonoBehaviour
         colorMapTexture.enableRandomWrite = true;
         colorMapTexture.Create();
 
-        InitializeAgents();
-        InitializeGradientTexture();
+        ResetAgents();
+        ResetGradientTexture();
     }
 
-    public void InitializeAgents()
+    public void ResetAgents()
     {
         // set up a few agents to simulate
         int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
@@ -121,18 +129,21 @@ public class SlimeSimulationV1 : MonoBehaviour
         agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV1.Size);
     }
 
-    void InitializeGradientTexture()
+    void ResetGradientTexture()
     {
         int textureWidth = 256; // Set the desired width of the texture
         int textureHeight = 1; // Since it's a 1D gradient, set the height to 1
 
-        gradientTexture = new Texture2D(
-            textureWidth,
-            textureHeight,
-            TextureFormat.RGBA32,
-            0,
-            false
-        );
+        if (gradientTexture == null)
+        {
+            gradientTexture = new Texture2D(
+                textureWidth,
+                textureHeight,
+                TextureFormat.RGBA32,
+                0,
+                false
+            );
+        }
 
         for (int x = 0; x < textureWidth; x++)
         {
@@ -142,6 +153,74 @@ public class SlimeSimulationV1 : MonoBehaviour
         }
 
         gradientTexture.Apply();
+    }
+
+    public void TransitionGradients()
+    {
+        currGradientIndex = nextGradientIndex;
+        nextGradientIndex = (nextGradientIndex + 1) % gradients.Count;
+
+        startGradientTransition = true;
+        lerpStartTime = Time.time;
+    }
+
+    void PerformGradientTransition()
+    {
+        if (startGradientTransition == false)
+        {
+            return;
+        }
+
+        float timeElapsed = Time.time - lerpStartTime;
+        float lerpPercent = timeElapsed / lerpDuration;
+
+        Gradient currGradient = gradients[currGradientIndex];
+        Gradient nextGradient = gradients[nextGradientIndex];
+
+        GradientColorKey[] currColorKeys = currGradient.colorKeys;
+        GradientColorKey[] nextColorKeys = nextGradient.colorKeys;
+        GradientColorKey[] finalColorKeys = gradient.colorKeys;
+        for (int i = 0; i < finalColorKeys.Length; i++)
+        {
+            finalColorKeys[i].color = Color.Lerp(
+                currColorKeys[i].color,
+                nextColorKeys[i].color,
+                lerpPercent
+            );
+            finalColorKeys[i].time = Mathf.Lerp(
+                currColorKeys[i].time,
+                nextColorKeys[i].time,
+                lerpPercent
+            );
+        }
+
+        // note: no need to transition alpha keys as they are always the same
+        // GradientAlphaKey[] currAlphaKeys = currGrad.alphaKeys;
+        // GradientAlphaKey[] nextAlphaKeys = nextGrad.alphaKeys;
+        // GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
+        // for (int i = 0; i < alphaKeys.Length; i++)
+        // {
+        //     alphaKeys[i].alpha = Mathf.Lerp(
+        //         currAlphaKeys[i].alpha,
+        //         nextAlphaKeys[i].alpha,
+        //         lerpPercent
+        //     );
+        //     alphaKeys[i].time = Mathf.Lerp(
+        //         currAlphaKeys[i].time,
+        //         nextAlphaKeys[i].time,
+        //         lerpPercent
+        //     );
+        // }
+
+        // Assign the modified keys back to the gradient
+        gradient.SetKeys(finalColorKeys, gradient.alphaKeys);
+
+        ResetGradientTexture();
+
+        if (lerpPercent >= 1.0f)
+        {
+            startGradientTransition = false;
+        }
     }
 
     public void RandomizeGradient()
@@ -169,7 +248,7 @@ public class SlimeSimulationV1 : MonoBehaviour
         // Assign the modified keys back to the gradient
         gradient.SetKeys(colorKeys, alphaKeys);
 
-        InitializeGradientTexture();
+        ResetGradientTexture();
     }
 
     void PrintAgentsPositions()
@@ -268,6 +347,8 @@ public class SlimeSimulationV1 : MonoBehaviour
 
         // update the "agents" array with the positions + directions from the compute shader
         agentsBuffer.GetData(agents);
+
+        PerformGradientTransition();
     }
 
     void OnDestroy()
