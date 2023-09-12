@@ -56,18 +56,20 @@ float sense(Agent agent, float2 center, float2 newDirection) {
 			int sampleY = min(height-1, max(0, sensorPosition.y + offsetY));
 
             int i = agent.speciesIndex;
-
             if (i == 0) {
                 sum += TrailMapTexture[int2(sampleX,sampleY)].x;
+                // avoidance
+                sum -= TrailMapTexture[int2(sampleX,sampleY)].y;
             } else {
                 sum += TrailMapTexture[int2(sampleX,sampleY)].y;
+                // avoidance
+                sum -= TrailMapTexture[int2(sampleX,sampleY)].x;
             }
 
             // for (int i = 0; i < 2; i++) {
-            //     float4 mask = float4(i == 0, i == 1, 0, 0);
-            //     // finalColor = finalColor + SpeciesSettingsBuffer[i].color * dot(originalColor, mask);
-            //     sum += dot(TrailMapTexture[int2(sampleX,sampleY)], mask);
+            //     sum += dot(TrailMapTexture[int2(sampleX,sampleY)], senseWeight);
             // }
+
             // todo: update the sum correctly
             // sum += TrailMapTexture[int2(sampleX,sampleY)].x;
         }
