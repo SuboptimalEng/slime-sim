@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public struct AgentV1
@@ -30,21 +31,21 @@ public class SlimeSimulationV1 : MonoBehaviour
     [RangeWithStep(32, 1048576, 32f)]
     public float numOfAgents;
 
-    [RangeWithStep(8, 256, 8f)]
-    public float speed;
-
     [RangeWithStep(0, 250, 10f)]
     public float distFromMapEdge;
 
-    [Header("Trail")]
-    [RangeWithStep(0, 1.0f, 0.1f)]
-    public float trailDecayRate;
+    [Header("Speed")]
+    [RangeWithStep(8, 256, 8f)]
+    public float speed;
 
-    [Header("Diffuse")]
-    [RangeWithStep(0, 1.0f, 0.1f)]
+    [Header("Trail")]
+    [RangeWithStep(0.0f, 1.5f, 0.1f)]
     public float diffuseRate;
 
-    [RangeWithStep(0, 1.0f, 0.1f)]
+    [RangeWithStep(0.1f, 1.0f, 0.1f)]
+    public float trailDecayRate;
+
+    [RangeWithStep(0.1f, 1.0f, 0.1f)]
     public float diffuseDecayRate;
 
     [Header("Sensor")]
@@ -61,6 +62,15 @@ public class SlimeSimulationV1 : MonoBehaviour
     public Gradient gradient;
 
     public List<Gradient> gradients;
+
+    [Header("Default Randomization Settings")]
+    public bool randomizeSpeed;
+    public bool randomizeTrail;
+    public bool randomizeSensors;
+
+    [Header("More Randomization Settings")]
+    public bool resetAgents;
+    public bool changeGradient;
 
     int currGradientIndex = 0;
     int nextGradientIndex = 0;
@@ -104,6 +114,38 @@ public class SlimeSimulationV1 : MonoBehaviour
         ResetGradientTexture();
     }
 
+    public void RandomizeAgentSettings()
+    {
+        if (randomizeSpeed)
+        {
+            speed = UnityEngine.Random.Range(32, 192);
+        }
+
+        if (randomizeTrail)
+        {
+            diffuseRate = UnityEngine.Random.Range(0f, 1.5f);
+            trailDecayRate = UnityEngine.Random.Range(0.1f, 1.0f);
+            diffuseDecayRate = UnityEngine.Random.Range(0.1f, 1.0f);
+        }
+
+        if (randomizeSensors)
+        {
+            sensorOffset = UnityEngine.Random.Range(1, 50);
+            sensorAngle = UnityEngine.Random.Range(1, 180);
+            rotationAngle = UnityEngine.Random.Range(1, 180);
+        }
+
+        if (resetAgents)
+        {
+            ResetAgents();
+        }
+
+        if (changeGradient)
+        {
+            ChangeGradient();
+        }
+    }
+
     public void ResetAgents()
     {
         // set up a few agents to simulate
@@ -112,17 +154,17 @@ public class SlimeSimulationV1 : MonoBehaviour
         for (int i = 0; i < numOfAgentsInt; i++)
         {
             // // part 1 - all agents at center facing outwards
-            agents[i].position = Vector2.zero;
-            agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
-            agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
-
-            // // part 2 - circle facing inwards
-            // float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
-            // agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
-            // agents[i].direction = (Vector2.zero - agents[i].position).normalized;
-            // // note: atan2 takes y first, then x
-            // // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.x, agents[i].direction.y);
+            // agents[i].position = Vector2.zero;
+            // agents[i].direction = UnityEngine.Random.insideUnitCircle.normalized;
             // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
+
+            // part 2 - circle facing inwards
+            float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
+            agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
+            agents[i].direction = (Vector2.zero - agents[i].position).normalized;
+            // note: atan2 takes y first, then x
+            // agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.x, agents[i].direction.y);
+            agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
         }
 
         // set up agentsBuffer to be the correct size
@@ -155,7 +197,7 @@ public class SlimeSimulationV1 : MonoBehaviour
         gradientTexture.Apply();
     }
 
-    public void TransitionGradients()
+    public void ChangeGradient()
     {
         currGradientIndex = nextGradientIndex;
         nextGradientIndex = (nextGradientIndex + 1) % gradients.Count;
@@ -229,25 +271,17 @@ public class SlimeSimulationV1 : MonoBehaviour
         {
             return;
         }
-
-        // Randomize color keys
         GradientColorKey[] colorKeys = gradient.colorKeys;
         for (int i = 0; i < colorKeys.Length; i++)
         {
             colorKeys[i].color = UnityEngine.Random.ColorHSV();
         }
-
-        // Randomize alpha keys
         GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
         for (int i = 0; i < alphaKeys.Length; i++)
         {
-            // alphaKeys[i].alpha = UnityEngine.Random.Range(0.0f, 1.0f);
             alphaKeys[i].alpha = 1;
         }
-
-        // Assign the modified keys back to the gradient
         gradient.SetKeys(colorKeys, alphaKeys);
-
         ResetGradientTexture();
     }
 

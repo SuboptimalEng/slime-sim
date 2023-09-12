@@ -44,16 +44,19 @@ public class SlimeSimulationV1Editor : Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        // Add a button to the Inspector
-        if (GUILayout.Button("Randomize Gradient"))
+        if (GUILayout.Button("Randomize Agent Settings"))
         {
-            // Perform your custom action when the button is clicked
-            slimeSimulationV1.RandomizeGradient();
+            slimeSimulationV1.RandomizeAgentSettings();
         }
 
-        if (GUILayout.Button("Transition Gradients"))
+        if (GUILayout.Button("Only Change Gradient"))
         {
-            slimeSimulationV1.TransitionGradients();
+            slimeSimulationV1.ChangeGradient();
+        }
+
+        if (GUILayout.Button("Randomize Gradient"))
+        {
+            slimeSimulationV1.RandomizeGradient();
         }
 
         // note: runs the method whenever any field changes
