@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEditor;
 
 // code by chatGPT
-[CustomEditor(typeof(SlimeSimulation))]
-public class SlimeSimulationEditor : Editor
+[CustomEditor(typeof(SlimeSimulationV2))]
+public class SlimeSimulationV2Editor : Editor
 {
-    SlimeSimulation slimeSimulation;
+    SlimeSimulationV2 slimeSimulationV2;
     SerializedProperty numOfAgents;
     float prevNumOfAgents;
 
@@ -36,7 +36,7 @@ public class SlimeSimulationEditor : Editor
             // Apply any modifications to the serialized object
             serializedObject.ApplyModifiedProperties();
 
-            slimeSimulation.InitializeAgents();
+            slimeSimulationV2.InitializeAgents();
         }
         else
         {
@@ -46,19 +46,19 @@ public class SlimeSimulationEditor : Editor
 
         if (GUILayout.Button("Randomize Species Settings"))
         {
-            slimeSimulation.RandomizeSpeciesSettings();
+            slimeSimulationV2.RandomizeSpeciesSettings();
         }
 
         if (GUILayout.Button("Apply Settings"))
         {
-            slimeSimulation.InitializeSpeciesSettings();
+            slimeSimulationV2.InitializeSpeciesSettings();
         }
 
         // Add a button to the Inspector
         if (GUILayout.Button("Randomize Gradient"))
         {
             // Perform your custom action when the button is clicked
-            slimeSimulation.RandomizeGradient();
+            slimeSimulationV2.RandomizeGradient();
         }
 
         // note: runs the method whenever any field changes
@@ -67,14 +67,14 @@ public class SlimeSimulationEditor : Editor
         //     base.OnInspectorGUI();
         //     if (check.changed)
         //     {
-        //         slimeSimulation.InitializeAgents();
+        //         slimeSimulationV2.InitializeAgents();
         //     }
         // }
     }
 
     void OnEnable()
     {
-        slimeSimulation = target as SlimeSimulation;
+        slimeSimulationV2 = target as SlimeSimulationV2;
         numOfAgents = serializedObject.FindProperty("numOfAgents");
         prevNumOfAgents = numOfAgents.floatValue;
     }

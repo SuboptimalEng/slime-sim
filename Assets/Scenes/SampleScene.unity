@@ -137,12 +137,12 @@ GameObject:
   - component: {fileID: 98683593}
   - component: {fileID: 98683592}
   m_Layer: 0
-  m_Name: QuadV1
+  m_Name: SlimeSimV1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &98683592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -152,10 +152,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 98683591}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 899ad6bf811df49cd9feadb91f717c8e, type: 3}
+  m_Script: {fileID: 11500000, guid: 2bcbf72af0c8c44569a3223b5b52399f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  computeShader: {fileID: 7200000, guid: f80aef10da7f9414aac2590399b8f7a4, type: 3}
+  computeShader: {fileID: 7200000, guid: 38c9724cf0ec94df397375dbb5e58c2e, type: 3}
   width: 1000
   height: 1000
   numOfAgents: 40352
@@ -571,12 +571,12 @@ GameObject:
   - component: {fileID: 1383880958}
   - component: {fileID: 1383880962}
   m_Layer: 0
-  m_Name: Quad
+  m_Name: SlimeSimV2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!64 &1383880958
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -665,10 +665,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1383880957}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e7cc68cd89298425c97c94c1dde86d13, type: 3}
+  m_Script: {fileID: 11500000, guid: ab3245fff3eca44fb918293b10ffe800, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  computeShader: {fileID: 7200000, guid: 9f5bef98d1fba40789460c1fc123d972, type: 3}
+  computeShader: {fileID: 7200000, guid: f755f0b695ba748a0966bd131d108730, type: 3}
   width: 1024
   height: 1024
   numOfAgents: 100000
@@ -682,9 +682,9 @@ MonoBehaviour:
     sensorAngle: 180
     rotationAngle: 180
     color: {r: 0.764151, g: 0, b: 0, a: 1}
-  - sensorOffset: 4
-    sensorAngle: 40
-    rotationAngle: 40
+  - sensorOffset: 24
+    sensorAngle: 45
+    rotationAngle: 45
     color: {r: 0, g: 0.27493212, b: 0.8113208, a: 1}
   gradient:
     serializedVersion: 2
@@ -758,15 +758,46 @@ MonoBehaviour:
   diffuseDecayRate: 0.5
   speciesSettingsList: []
   gradient:
-    serializedVersion: 2
-    key0: {r: 0, g: 0, b: 0, a: 1}
-    key1: {r: 1, g: 1, b: 1, a: 1}
-    key2: {r: 0, g: 0, b: 0, a: 0}
-    key3: {r: 0, g: 0, b: 0, a: 0}
-    key4: {r: 0, g: 0, b: 0, a: 0}
-    key5: {r: 0, g: 0, b: 0, a: 0}
-    key6: {r: 0, g: 0, b: 0, a: 0}
-    key7: {r: 0, g: 0, b: 0, a: 0}
+    key0:
+      r: 0
+      g: 0
+      b: 0
+      a: 1
+    key1:
+      r: 1
+      g: 1
+      b: 1
+      a: 1
+    key2:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
+    key3:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
+    key4:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
+    key5:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
+    key6:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
+    key7:
+      r: 0
+      g: 0
+      b: 0
+      a: 0
     ctime0: 0
     ctime1: 65535
     ctime2: 0
@@ -786,6 +817,12 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 2
     m_NumAlphaKeys: 2
+  speciesSettings: []
+  positionTexture: {fileID: 0}
+  trailMapTexture: {fileID: 0}
+  diffuseMapTexture: {fileID: 0}
+  colorMapTexture: {fileID: 0}
+  gradientTexture: {fileID: 0}
 --- !u!64 &2131114177
 MeshCollider:
   m_ObjectHideFlags: 0
