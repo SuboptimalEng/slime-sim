@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEditor;
 
 // code by chatGPT
-[CustomEditor(typeof(OldSlimeSimulationV1))]
-public class OldSlimeSimulationV1Editor : Editor
+[CustomEditor(typeof(SlimeSimulationV1))]
+public class SlimeSimulationV1Editor : Editor
 {
-    OldSlimeSimulationV1 slimeSimulationV1;
+    SlimeSimulationV1 slimeSimulationV1;
     SerializedProperty numOfAgents;
     float prevNumOfAgents;
 
@@ -64,7 +64,7 @@ public class OldSlimeSimulationV1Editor : Editor
 
     void OnEnable()
     {
-        slimeSimulationV1 = target as OldSlimeSimulationV1;
+        slimeSimulationV1 = target as SlimeSimulationV1;
         numOfAgents = serializedObject.FindProperty("numOfAgents");
         prevNumOfAgents = numOfAgents.floatValue;
     }
