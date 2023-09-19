@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public struct AgentV3
@@ -79,7 +80,7 @@ public class SlimeSimulationV3 : MonoBehaviour
     SpeciesSettingsV3[] speciesSettings;
     ComputeBuffer speciesSettingsBuffer;
 
-    RenderTexture positionTexture;
+    RenderTexture positionMapTexture;
     RenderTexture trailMapTexture;
     RenderTexture diffuseMapTexture;
     RenderTexture colorMapTexture;
@@ -98,9 +99,9 @@ public class SlimeSimulationV3 : MonoBehaviour
         RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default;
 
         // create the position texture and enable UAV access
-        positionTexture = new RenderTexture(width, height, depth, format, readWrite);
-        positionTexture.enableRandomWrite = true;
-        positionTexture.Create();
+        positionMapTexture = new RenderTexture(width, height, depth, format, readWrite);
+        positionMapTexture.enableRandomWrite = true;
+        positionMapTexture.Create();
 
         trailMapTexture = new RenderTexture(width, height, depth, format, readWrite);
         trailMapTexture.enableRandomWrite = true;
@@ -146,11 +147,15 @@ public class SlimeSimulationV3 : MonoBehaviour
             Vector2 direction = UnityEngine.Random.insideUnitCircle.normalized;
             agents[i].angleInRadians = Mathf.Atan2(direction.y, direction.x);
 
-            float randomValue = UnityEngine.Random.Range(0f, 2f);
-            int randomZeroOrOne = Mathf.FloorToInt(randomValue);
-            agents[i].speciesIndex = randomZeroOrOne;
-            agents[i].speciesMask =
-                randomZeroOrOne == 0 ? new Vector4(1, 0, 0, 0) : new Vector4(0, 1, 0, 0);
+            float randomValue = UnityEngine.Random.Range(0f, speciesSettingsList.Count);
+            int speciesIndex = Mathf.FloorToInt(randomValue);
+            agents[i].speciesIndex = speciesIndex;
+            agents[i].speciesMask = new Vector4(
+                0 == speciesIndex ? 1 : 0,
+                1 == speciesIndex ? 1 : 0,
+                2 == speciesIndex ? 1 : 0,
+                3 == speciesIndex ? 1 : 0
+            );
 
             // part 2 - circle facing inwards
             // float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
@@ -256,12 +261,12 @@ public class SlimeSimulationV3 : MonoBehaviour
 
         // DiscardContents() -> tells unity you no longer need this data.
         // it does not guarantee that memory is immediately released.
-        // positionTexture.DiscardContents();
+        // positionMapTexture.DiscardContents();
 
         // Release() -> tells unity immediately discard this memory
         // useful to reset previous positions value to float4(0, 0, 0, 0)
         // this texture should only store the current position of the agent
-        positionTexture.Release();
+        positionMapTexture.Release();
 
         // set the "agents buffer" array with the latest position + direction data from "agents"
         agentsBuffer.SetData(agents);
@@ -277,21 +282,20 @@ public class SlimeSimulationV3 : MonoBehaviour
         computeShader.SetFloat("deltaTime", Time.deltaTime);
 
         computeShader.SetFloat("numOfAgents", numOfAgents);
-        // todo: update this
-        // computeShader.SetFloat("numOfSpecies", 2);
+        computeShader.SetFloat("numOfSpecies", speciesSettingsList.Count);
 
         computeShader.SetBuffer(kernelHandle1, "AgentsBuffer", agentsBuffer);
         computeShader.SetBuffer(kernelHandle1, "SpeciesSettingsBuffer", speciesSettingsBuffer);
-        computeShader.SetTexture(kernelHandle1, "PositionTexture", positionTexture);
+        computeShader.SetTexture(kernelHandle1, "PositionMapTexture", positionMapTexture);
         computeShader.SetTexture(kernelHandle1, "TrailMapTexture", trailMapTexture);
         computeShader.Dispatch(kernelHandle1, Mathf.RoundToInt(numOfAgents) / 32, 1, 1);
 
-        // todo: figure out why we need to set the positionTexture again even though
+        // todo: figure out why we need to set the positionMapTexture again even though
         // we don't need to create the variable for #pragma kernel CSTrailMap
         int kernelHandle2 = computeShader.FindKernel("CSTrailMap");
         computeShader.SetFloat("trailDecayRate", trailDecayRate);
         computeShader.SetBuffer(kernelHandle2, "SpeciesSettingsBuffer", speciesSettingsBuffer);
-        computeShader.SetTexture(kernelHandle2, "PositionTexture", positionTexture);
+        computeShader.SetTexture(kernelHandle2, "PositionMapTexture", positionMapTexture);
         computeShader.SetTexture(kernelHandle2, "TrailMapTexture", trailMapTexture);
         computeShader.Dispatch(
             kernelHandle2,
@@ -306,7 +310,7 @@ public class SlimeSimulationV3 : MonoBehaviour
         computeShader.SetFloat("diffuseRate", diffuseRate);
         computeShader.SetFloat("diffuseDecayRate", diffuseDecayRate);
         computeShader.SetBuffer(kernelHandle3, "SpeciesSettingsBuffer", speciesSettingsBuffer);
-        computeShader.SetTexture(kernelHandle3, "PositionTexture", positionTexture);
+        computeShader.SetTexture(kernelHandle3, "PositionMapTexture", positionMapTexture);
         computeShader.SetTexture(kernelHandle3, "TrailMapTexture", trailMapTexture);
         computeShader.SetTexture(kernelHandle3, "DiffuseMapTexture", diffuseMapTexture);
         computeShader.SetTexture(kernelHandle3, "ColorMapTexture", colorMapTexture);
@@ -323,7 +327,7 @@ public class SlimeSimulationV3 : MonoBehaviour
         Graphics.Blit(diffuseMapTexture, trailMapTexture);
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
-        // meshRenderer.material.mainTexture = positionTexture;
+        // meshRenderer.material.mainTexture = positionMapTexture;
         // meshRenderer.material.mainTexture = trailMapTexture;
         // meshRenderer.material.mainTexture = diffuseMapTexture;
         meshRenderer.material.mainTexture = colorMapTexture;

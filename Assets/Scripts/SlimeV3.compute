@@ -23,12 +23,12 @@ float time;
 float deltaTime;
 
 float numOfAgents;
-// float numOfSpecies;
+float numOfSpecies;
 
 RWStructuredBuffer<Agent> AgentsBuffer;
 RWStructuredBuffer<SpeciesSettings> SpeciesSettingsBuffer;
 
-RWTexture2D<float4> PositionTexture; // use RWTexture2D for UAV access
+RWTexture2D<float4> PositionMapTexture; // use RWTexture2D for UAV access
 RWTexture2D<float4> TrailMapTexture; // use RWTexture2D for UAV access
 
 float2 radiansToDirection(float angleInRadians) {
@@ -54,17 +54,7 @@ float sense(Agent agent, float2 center, float2 newDirection) {
 			int sampleX = min(width-1, max(0, sensorPosition.x + offsetX));
 			int sampleY = min(height-1, max(0, sensorPosition.y + offsetY));
 
-            // note: this same op can be performed more simply using senseWeight
-            // int i = agent.speciesIndex;
-            // if (i == 0) {
-            //     sum += TrailMapTexture[int2(sampleX,sampleY)].x;
-            //     sum -= TrailMapTexture[int2(sampleX,sampleY)].y;
-            // } else {
-            //     sum += TrailMapTexture[int2(sampleX,sampleY)].y;
-            //     sum -= TrailMapTexture[int2(sampleX,sampleY)].x;
-            // }
-
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < numOfSpecies; i++) {
                 // senseWeight -> [1, -1, -1, -1];
                 // TrailMap can store data from 4 agents, one in each channel
                 // If the sum is negative, then the agent will try to move away
@@ -107,7 +97,7 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     float2 newAgentPos = oldAgentPos + speed * oldAgentDir * deltaTime;
 
     uint2 dimensions;
-    PositionTexture.GetDimensions(dimensions.x, dimensions.y);
+    PositionMapTexture.GetDimensions(dimensions.x, dimensions.y);
     float maxX = dimensions.x / 2;
     float maxY = dimensions.y / 2;
 
@@ -126,22 +116,22 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     AgentsBuffer[id.x].position = newAgentPos;
     float2 center = dimensions / 2;
     newAgentPos += center;
+    int2 coord = int2(newAgentPos);
     int4 agentSpeciesMask = agent.speciesMask;
 
-    // note: this approach allows us to keep track of the current species as well
-    // as the three other species.
-    // PositionTexture -> [1, 0, 0, 0]
+    // note: this approach allows us to keep track of the position of the current species
+    // as well as the three other species in the xyzw coords of the float4
+    // PositionMapTexture -> [1, 0, 0, 0]
     // AgentSpeciesMask -> [0, 1, 0, 0]
-    PositionTexture[int2(newAgentPos)]
-        = max(PositionTexture[int2(newAgentPos)], agentSpeciesMask);
+    // Result -> [1, 1, 0, 0] (can keep track of 4 agents)
+    PositionMapTexture[coord] = max(PositionMapTexture[coord], agentSpeciesMask);
 
-    // // todo: work on sensing functions
-    float forwardRadians = agent.angleInRadians;
 
     float sensorAngle = SpeciesSettingsBuffer[agent.speciesIndex].sensorAngle;
     float leftRadians = agent.angleInRadians + radians(sensorAngle);
     float rightRadians = agent.angleInRadians - radians(sensorAngle);
 
+    float forwardRadians = agent.angleInRadians;
     float2 forwardDirection = radiansToDirection(forwardRadians);
     float2 leftDirection = radiansToDirection(leftRadians);
     float2 rightDirection = radiansToDirection(rightRadians);
@@ -150,7 +140,8 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     float leftSum = sense(agent, center, leftDirection);
     float rightSum = sense(agent, center, rightDirection);
 
-    // note: random fn -> https://github.com/SebLague/Slime-Simulation
+    // random fn -> https://github.com/SebLague/Slime-Simulation
+    // random fn -> https://www.cs.ubc.ca/~rbridson/docs/schechter-sca08-turbulence.pdf
     uint random = hash(newAgentPos.y * width + newAgentPos.x + hash(id.x + time * 100000));
     float randomSteerStrength = scaleToRange01(random);
     float rotationAngle = SpeciesSettingsBuffer[agent.speciesIndex].rotationAngle;
@@ -177,24 +168,17 @@ void CSTrailMap(uint3 id : SV_DispatchThreadID) {
     // todo: check if this is first undefined on the first run (looks like it's not)
     float4 trailMapColor = TrailMapTexture[id.xy];
 
-    // note: old approach, doing this first seems more reasonable (kinda)
-    // lower the trail map color slightly on each loop to add a "fading" effect
-    // trailMapColor = max(0, trailMapColor - trailDecayRate * deltaTime);
-    // note: if the positionTexture is set to 1, then set trailMapColor to 1 as well
-    // trailMapColor = max(PositionTexture[id.xy].x, trailMapColor.x);
-
-    // note: new approach
+    // first, lower the trail map color slightly on each loop to add a "fading" effect
     trailMapColor = max(0, trailMapColor - trailDecayRate * deltaTime);
-    trailMapColor = max(
-        trailMapColor,
-        PositionTexture[id.xy]
-    );
+
+    // then, check PositionMapTexture to see if the current coord is filled with a live agent
+    trailMapColor = max(trailMapColor, PositionMapTexture[id.xy]);
 
     TrailMapTexture[id.xy] = trailMapColor;
 }
 
 
-// // NOTE: DO THIS IN A SEPARATE PASS
+// NOTE: DO THIS IN A SEPARATE PASS
 #pragma kernel CSDiffuseMap
 float diffuseRate;
 float diffuseDecayRate;
@@ -217,6 +201,7 @@ void CSDiffuseMap(uint3 id : SV_DispatchThreadID) {
 			sum += TrailMapTexture[int2(sampleX,sampleY)];
 		}
 	}
+
 	float4 blurredColor = sum / 9;
     float4 originalColor = TrailMapTexture[id.xy];
 	// float diffuseWeight = saturate(diffuseRate * deltaTime);
@@ -227,6 +212,7 @@ void CSDiffuseMap(uint3 id : SV_DispatchThreadID) {
     // note: the second approach fully clears out blurred colors in due time
 	// DiffuseMapTexture[id.xy] = blurredColor * saturate(1 - diffuseDecayRate * deltaTime);
 	DiffuseMapTexture[id.xy] = max(0, blurredColor - diffuseDecayRate * deltaTime);
+
     // // note: set the color map here
     // // we know that x, y, z values are all the same so we can sample from any one of them
     // float t = DiffuseMapTexture[id.xy].x;
@@ -241,8 +227,8 @@ void CSDiffuseMap(uint3 id : SV_DispatchThreadID) {
     // note: new approach
 
     float4 finalColor = 0;
-    for (int i = 0; i < 2; i++) {
-        float4 mask = float4(i == 0, i == 1, 0, 1);
+    for (int i = 0; i < numOfSpecies; i++) {
+        float4 mask = float4(i == 0, i == 1, i == 2, i == 3);
         finalColor = finalColor + SpeciesSettingsBuffer[i].color * dot(originalColor, mask);
     }
     ColorMapTexture[id.xy] = finalColor;
