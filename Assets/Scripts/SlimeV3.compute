@@ -38,6 +38,7 @@ float2 radiansToDirection(float angleInRadians) {
     return direction;
 }
 
+// note: https://github.com/SebLague/Slime-Simulation
 float sense(Agent agent, float2 center, float2 newDirection) {
     float2 sensorPosition =
         agent.position + center + SpeciesSettingsBuffer[agent.speciesIndex].sensorOffset * newDirection;
@@ -100,37 +101,39 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     }
 
     Agent agent = AgentsBuffer[id.x];
-    float2 agentPosition = agent.position;
-    float2 agentDirection = radiansToDirection(agent.angleInRadians);
+    float2 oldAgentPos = agent.position;
+    float2 oldAgentDir = radiansToDirection(agent.angleInRadians);
 
-    float2 pos = agentPosition + speed * agentDirection * deltaTime;
+    float2 newAgentPos = oldAgentPos + speed * oldAgentDir * deltaTime;
 
     uint2 dimensions;
     PositionTexture.GetDimensions(dimensions.x, dimensions.y);
     float maxX = dimensions.x / 2;
     float maxY = dimensions.y / 2;
 
-    if (pos.x < -maxX + distFromMapEdge || pos.x > maxX - distFromMapEdge) {
-        agentDirection.x *= -1;
-        AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
-        pos = agentPosition + speed * agentDirection * deltaTime;
+    if (newAgentPos.x < -maxX + distFromMapEdge || newAgentPos.x > maxX - distFromMapEdge) {
+        oldAgentDir.x *= -1;
+        AgentsBuffer[id.x].angleInRadians = atan2(oldAgentDir.y, oldAgentDir.x);
+        newAgentPos = oldAgentPos + speed * oldAgentDir * deltaTime;
     }
 
-    if (pos.y < -maxY + distFromMapEdge || pos.y > maxY - distFromMapEdge) {
-        agentDirection.y *= -1;
-        AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
-        pos = agentPosition + speed * agentDirection * deltaTime;
+    if (newAgentPos.y < -maxY + distFromMapEdge || newAgentPos.y > maxY - distFromMapEdge) {
+        oldAgentDir.y *= -1;
+        AgentsBuffer[id.x].angleInRadians = atan2(oldAgentDir.y, oldAgentDir.x);
+        newAgentPos = oldAgentPos + speed * oldAgentDir * deltaTime;
     }
 
-    AgentsBuffer[id.x].position = pos;
+    AgentsBuffer[id.x].position = newAgentPos;
     float2 center = dimensions / 2;
-    pos += center;
+    newAgentPos += center;
     int4 agentSpeciesMask = agent.speciesMask;
 
     // note: this approach allows us to keep track of the current species as well
-    // as the three other species
-    PositionTexture[int2(pos)] = max(PositionTexture[int2(pos)], agentSpeciesMask);
-
+    // as the three other species.
+    // PositionTexture -> [1, 0, 0, 0]
+    // AgentSpeciesMask -> [0, 1, 0, 0]
+    PositionTexture[int2(newAgentPos)]
+        = max(PositionTexture[int2(newAgentPos)], agentSpeciesMask);
 
     // // todo: work on sensing functions
     float forwardRadians = agent.angleInRadians;
@@ -148,21 +151,18 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     float rightSum = sense(agent, center, rightDirection);
 
     // note: random fn -> https://github.com/SebLague/Slime-Simulation
-    uint random = hash(pos.y * width + pos.x + hash(id.x + time * 100000));
+    uint random = hash(newAgentPos.y * width + newAgentPos.x + hash(id.x + time * 100000));
     float randomSteerStrength = scaleToRange01(random);
     float rotationAngle = SpeciesSettingsBuffer[agent.speciesIndex].rotationAngle;
 
     if (forwardSum >= leftSum && forwardSum >= rightSum) {
         // do nothing
     } else if (forwardSum < leftSum && forwardSum < rightSum) {
-        AgentsBuffer[id.x].angleInRadians +=
-            (randomSteerStrength - 0.5) * 2 * (rotationAngle) * deltaTime;
+        AgentsBuffer[id.x].angleInRadians += (randomSteerStrength - 0.5) * 2 * rotationAngle * deltaTime;
     } else if (leftSum > rightSum) {
-        AgentsBuffer[id.x].angleInRadians +=
-            randomSteerStrength * (rotationAngle) * deltaTime;
+        AgentsBuffer[id.x].angleInRadians += randomSteerStrength * rotationAngle * deltaTime;
     } else if (rightSum > leftSum) {
-        AgentsBuffer[id.x].angleInRadians -=
-            randomSteerStrength * (rotationAngle) * deltaTime;
+        AgentsBuffer[id.x].angleInRadians -= randomSteerStrength * rotationAngle * deltaTime;
     } else {
         // do nothing
     }
