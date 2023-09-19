@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public struct AgentV2
+public struct AgentV3
 {
     public Vector2 position;
     public float angleInRadians;
@@ -17,7 +17,7 @@ public struct AgentV2
 }
 
 [System.Serializable]
-public struct SpeciesSettingsV2
+public struct SpeciesSettingsV3
 {
     [RangeWithStep(0, 50, 2f)]
     public float sensorOffset;
@@ -36,7 +36,7 @@ public struct SpeciesSettingsV2
     }
 }
 
-public class SlimeSimulationV2 : MonoBehaviour
+public class SlimeSimulationV3 : MonoBehaviour
 {
     public ComputeShader computeShader;
 
@@ -68,15 +68,15 @@ public class SlimeSimulationV2 : MonoBehaviour
     [RangeWithStep(0.1f, 1.0f, 0.1f)]
     public float diffuseDecayRate;
 
-    public List<SpeciesSettingsV2> speciesSettingsList;
+    public List<SpeciesSettingsV3> speciesSettingsList;
 
     [Header("Color")]
     public Gradient gradient;
 
-    AgentV2[] agents;
+    AgentV3[] agents;
     ComputeBuffer agentsBuffer;
 
-    SpeciesSettingsV2[] speciesSettings;
+    SpeciesSettingsV3[] speciesSettings;
     ComputeBuffer speciesSettingsBuffer;
 
     RenderTexture positionTexture;
@@ -122,7 +122,7 @@ public class SlimeSimulationV2 : MonoBehaviour
     public void InitializeSpeciesSettings()
     {
         int numOfSpecies = speciesSettingsList.Count;
-        speciesSettings = new SpeciesSettingsV2[numOfSpecies];
+        speciesSettings = new SpeciesSettingsV3[numOfSpecies];
         for (int i = 0; i < numOfSpecies; i++)
         {
             speciesSettings[i].sensorOffset = speciesSettingsList[i].sensorOffset;
@@ -131,14 +131,14 @@ public class SlimeSimulationV2 : MonoBehaviour
             Color c = speciesSettingsList[i].color;
             speciesSettings[i].color = new Vector4(c.r, c.g, c.b, c.a);
         }
-        speciesSettingsBuffer = new ComputeBuffer(numOfSpecies, SpeciesSettingsV2.Size);
+        speciesSettingsBuffer = new ComputeBuffer(numOfSpecies, SpeciesSettingsV3.Size);
     }
 
     public void InitializeAgents()
     {
         // set up a few agents to simulate
         int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
-        agents = new AgentV2[numOfAgentsInt];
+        agents = new AgentV3[numOfAgentsInt];
         for (int i = 0; i < numOfAgentsInt; i++)
         {
             // part 1 - all agents at center facing outwards
@@ -161,7 +161,7 @@ public class SlimeSimulationV2 : MonoBehaviour
         }
 
         // set up agentsBuffer to be the correct size
-        agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV2.Size);
+        agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV3.Size);
     }
 
     void InitializeGradientTexture()
@@ -219,7 +219,7 @@ public class SlimeSimulationV2 : MonoBehaviour
     {
         for (int i = 0; i < speciesSettingsList.Count; i++)
         {
-            SpeciesSettingsV2 s = speciesSettingsList[i];
+            SpeciesSettingsV3 s = speciesSettingsList[i];
 
             // speciesSettingsList[i].color = new Color(1, 1, 1, 1);
             s.sensorOffset = UnityEngine.Random.Range(1, 50);

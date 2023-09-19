@@ -39,39 +39,37 @@ float2 radiansToDirection(float angleInRadians) {
 }
 
 float sense(Agent agent, float2 center, float2 newDirection) {
-    // float2 sensorPosition = agent.position + center + sensorOffset * newDirection;
     float2 sensorPosition =
         agent.position + center + SpeciesSettingsBuffer[agent.speciesIndex].sensorOffset * newDirection;
-    // float2 sensorPosition =
-    //     agent.position + center + 20 * newDirection;
 
     float sum = 0;
 
-    // int4 senseWeight = agent.speciesMask * 2 - 1;
-    // int4 senseWeight = agent.speciesMask;
+    // agent.speciesMask -> [1, 0, 0, 0]
+    // senseWeight -> [1, -1, -1, -1]
+    int4 senseWeight = agent.speciesMask * 2 - 1;
 
     for (int offsetX = -1; offsetX <= 1; offsetX++) {
         for (int offsetY = -1; offsetY <= 1; offsetY++) {
 			int sampleX = min(width-1, max(0, sensorPosition.x + offsetX));
 			int sampleY = min(height-1, max(0, sensorPosition.y + offsetY));
 
-            int i = agent.speciesIndex;
-            if (i == 0) {
-                sum += TrailMapTexture[int2(sampleX,sampleY)].x;
-                // avoidance
-                sum -= TrailMapTexture[int2(sampleX,sampleY)].y;
-            } else {
-                sum += TrailMapTexture[int2(sampleX,sampleY)].y;
-                // avoidance
-                sum -= TrailMapTexture[int2(sampleX,sampleY)].x;
-            }
-
-            // for (int i = 0; i < 2; i++) {
-            //     sum += dot(TrailMapTexture[int2(sampleX,sampleY)], senseWeight);
+            // note: this same op can be performed more simply using senseWeight
+            // int i = agent.speciesIndex;
+            // if (i == 0) {
+            //     sum += TrailMapTexture[int2(sampleX,sampleY)].x;
+            //     sum -= TrailMapTexture[int2(sampleX,sampleY)].y;
+            // } else {
+            //     sum += TrailMapTexture[int2(sampleX,sampleY)].y;
+            //     sum -= TrailMapTexture[int2(sampleX,sampleY)].x;
             // }
 
-            // todo: update the sum correctly
-            // sum += TrailMapTexture[int2(sampleX,sampleY)].x;
+            for (int i = 0; i < 2; i++) {
+                // senseWeight -> [1, -1, -1, -1];
+                // TrailMap can store data from 4 agents, one in each channel
+                // If the sum is negative, then the agent will try to move away
+                // from this direction, otherwise, move towards it
+                sum += dot(TrailMapTexture[int2(sampleX,sampleY)], senseWeight);
+            }
         }
     }
 
@@ -104,7 +102,6 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     Agent agent = AgentsBuffer[id.x];
     float2 agentPosition = agent.position;
     float2 agentDirection = radiansToDirection(agent.angleInRadians);
-    int4 agentSpeciesMask = agent.speciesMask;
 
     float2 pos = agentPosition + speed * agentDirection * deltaTime;
 
@@ -128,9 +125,11 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     AgentsBuffer[id.x].position = pos;
     float2 center = dimensions / 2;
     pos += center;
+    int4 agentSpeciesMask = agent.speciesMask;
+
+    // note: this approach allows us to keep track of the current species as well
+    // as the three other species
     PositionTexture[int2(pos)] = max(PositionTexture[int2(pos)], agentSpeciesMask);
-    // note: this approach is incorrectly overwriting the data of agents
-    // PositionTexture[int2(pos)] = agentSpeciesMask;
 
 
     // // todo: work on sensing functions
