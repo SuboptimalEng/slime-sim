@@ -185,9 +185,9 @@ float diffuseDecayRate;
 RWTexture2D<float4> DiffuseMapTexture;
 RWTexture2D<float4> ColorMapTexture;
 // note: example sampling from a texture map!!!
-Texture2D<float4> GradientTexture;
+// Texture2D<float4> GradientTexture;
 // note: this is required? not sure exactly how it works
-SamplerState samplerGradientTexture;
+// SamplerState samplerGradientTexture;
 [numthreads(8, 8, 1)]
 void CSDiffuseMap(uint3 id : SV_DispatchThreadID) {
     // note: do not blur on the same map as trail map because that will mess up trail data
@@ -224,12 +224,14 @@ void CSDiffuseMap(uint3 id : SV_DispatchThreadID) {
     // // float4 color = GradientTexture.Sample(samplerGradientTexture, uv); // dx11
     // float4 color = GradientTexture.SampleLevel(samplerGradientTexture, textureCoord, 0); // dx11
     // ColorMapTexture[id.xy] = color;
-    // note: new approach
 
+    // note: new approach
     float4 finalColor = 0;
     for (int i = 0; i < numOfSpecies; i++) {
         float4 mask = float4(i == 0, i == 1, i == 2, i == 3);
-        finalColor = finalColor + SpeciesSettingsBuffer[i].color * dot(originalColor, mask);
+        finalColor += SpeciesSettingsBuffer[i].color * dot(originalColor, mask);
     }
+    finalColor /= numOfSpecies;
+
     ColorMapTexture[id.xy] = finalColor;
 }

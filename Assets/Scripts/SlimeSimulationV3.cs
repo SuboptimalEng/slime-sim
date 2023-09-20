@@ -71,8 +71,9 @@ public class SlimeSimulationV3 : MonoBehaviour
 
     public List<SpeciesSettingsV3> speciesSettingsList;
 
-    [Header("Color")]
-    public Gradient gradient;
+    // [Header("Color")]
+    // public Gradient gradient;
+    // public List<Gradient> gradients;
 
     AgentV3[] agents;
     ComputeBuffer agentsBuffer;
@@ -84,7 +85,8 @@ public class SlimeSimulationV3 : MonoBehaviour
     RenderTexture trailMapTexture;
     RenderTexture diffuseMapTexture;
     RenderTexture colorMapTexture;
-    Texture2D gradientTexture;
+
+    // Texture2D gradientTexture;
 
     void Start()
     {
@@ -117,7 +119,7 @@ public class SlimeSimulationV3 : MonoBehaviour
 
         InitializeAgents();
         InitializeSpeciesSettings();
-        InitializeGradientTexture();
+        // InitializeGradientTexture();
     }
 
     public void InitializeSpeciesSettings()
@@ -169,56 +171,49 @@ public class SlimeSimulationV3 : MonoBehaviour
         agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV3.Size);
     }
 
-    void InitializeGradientTexture()
-    {
-        int textureWidth = 256; // Set the desired width of the texture
-        int textureHeight = 1; // Since it's a 1D gradient, set the height to 1
+    // void InitializeGradientTexture()
+    // {
+    //     int textureWidth = 256; // Set the desired width of the texture
+    //     int textureHeight = 1; // Since it's a 1D gradient, set the height to 1
+    //     gradientTexture = new Texture2D(
+    //         textureWidth,
+    //         textureHeight,
+    //         TextureFormat.RGBA32,
+    //         0,
+    //         false
+    //     );
+    //     for (int x = 0; x < textureWidth; x++)
+    //     {
+    //         float t = (float)x / (float)(textureWidth - 1); // Normalize x to [0, 1]
+    //         Color color = gradient.Evaluate(t); // Evaluate the gradient color at position t
+    //         gradientTexture.SetPixel(x, 0, color); // Set the color at the pixel position
+    //     }
+    //     gradientTexture.Apply();
+    // }
 
-        gradientTexture = new Texture2D(
-            textureWidth,
-            textureHeight,
-            TextureFormat.RGBA32,
-            0,
-            false
-        );
-
-        for (int x = 0; x < textureWidth; x++)
-        {
-            float t = (float)x / (float)(textureWidth - 1); // Normalize x to [0, 1]
-            Color color = gradient.Evaluate(t); // Evaluate the gradient color at position t
-            gradientTexture.SetPixel(x, 0, color); // Set the color at the pixel position
-        }
-
-        gradientTexture.Apply();
-    }
-
-    public void RandomizeGradient()
-    {
-        if (gradient == null)
-        {
-            return;
-        }
-
-        // Randomize color keys
-        GradientColorKey[] colorKeys = gradient.colorKeys;
-        for (int i = 0; i < colorKeys.Length; i++)
-        {
-            colorKeys[i].color = UnityEngine.Random.ColorHSV();
-        }
-
-        // Randomize alpha keys
-        GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
-        for (int i = 0; i < alphaKeys.Length; i++)
-        {
-            // alphaKeys[i].alpha = UnityEngine.Random.Range(0.0f, 1.0f);
-            alphaKeys[i].alpha = 1;
-        }
-
-        // Assign the modified keys back to the gradient
-        gradient.SetKeys(colorKeys, alphaKeys);
-
-        InitializeGradientTexture();
-    }
+    // public void RandomizeGradient()
+    // {
+    //     if (gradient == null)
+    //     {
+    //         return;
+    //     }
+    //     // Randomize color keys
+    //     GradientColorKey[] colorKeys = gradient.colorKeys;
+    //     for (int i = 0; i < colorKeys.Length; i++)
+    //     {
+    //         colorKeys[i].color = UnityEngine.Random.ColorHSV();
+    //     }
+    //     // Randomize alpha keys
+    //     GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
+    //     for (int i = 0; i < alphaKeys.Length; i++)
+    //     {
+    //         // alphaKeys[i].alpha = UnityEngine.Random.Range(0.0f, 1.0f);
+    //         alphaKeys[i].alpha = 1;
+    //     }
+    //     // Assign the modified keys back to the gradient
+    //     gradient.SetKeys(colorKeys, alphaKeys);
+    //     InitializeGradientTexture();
+    // }
 
     public void RandomizeSpeciesSettings()
     {
@@ -310,11 +305,10 @@ public class SlimeSimulationV3 : MonoBehaviour
         computeShader.SetFloat("diffuseRate", diffuseRate);
         computeShader.SetFloat("diffuseDecayRate", diffuseDecayRate);
         computeShader.SetBuffer(kernelHandle3, "SpeciesSettingsBuffer", speciesSettingsBuffer);
-        computeShader.SetTexture(kernelHandle3, "PositionMapTexture", positionMapTexture);
         computeShader.SetTexture(kernelHandle3, "TrailMapTexture", trailMapTexture);
         computeShader.SetTexture(kernelHandle3, "DiffuseMapTexture", diffuseMapTexture);
         computeShader.SetTexture(kernelHandle3, "ColorMapTexture", colorMapTexture);
-        computeShader.SetTexture(kernelHandle3, "GradientTexture", gradientTexture);
+        // computeShader.SetTexture(kernelHandle3, "GradientTexture", gradientTexture);
         computeShader.Dispatch(
             kernelHandle3,
             diffuseMapTexture.width / 8,
@@ -352,6 +346,6 @@ public class SlimeSimulationV3 : MonoBehaviour
         }
         agentsBuffer.Release();
         speciesSettingsBuffer.Release();
-        Destroy(gradientTexture);
+        // Destroy(gradientTexture);
     }
 }

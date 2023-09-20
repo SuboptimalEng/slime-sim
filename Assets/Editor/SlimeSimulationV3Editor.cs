@@ -55,11 +55,11 @@ public class SlimeSimulationV3Editor : Editor
         }
 
         // Add a button to the Inspector
-        if (GUILayout.Button("Randomize Gradient"))
-        {
-            // Perform your custom action when the button is clicked
-            slimeSimulationV3.RandomizeGradient();
-        }
+        // if (GUILayout.Button("Randomize Gradient"))
+        // {
+        //     // Perform your custom action when the button is clicked
+        //     slimeSimulationV3.RandomizeGradient();
+        // }
 
         // note: runs the method whenever any field changes
         // using (var check = new EditorGUI.ChangeCheckScope())
