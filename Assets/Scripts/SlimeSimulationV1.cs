@@ -146,6 +146,21 @@ public class SlimeSimulationV1 : MonoBehaviour
         }
     }
 
+    // note: for the youtube demo
+    // public void ResetAgentsV0()
+    // {
+    //     int numOfAgentsInt = Mathf.RoundToInt(numOfAgents);
+    //     agents = new AgentV1[numOfAgentsInt];
+    //     for (int i = 0; i < numOfAgentsInt; i++)
+    //     {
+    //         float initialRadius = Mathf.Min(width, height) / 2 - distFromMapEdge;
+    //         agents[i].position = initialRadius * UnityEngine.Random.insideUnitCircle;
+    //         agents[i].direction = (Vector2.zero - agents[i].position).normalized;
+    //         agents[i].angleInRadians = Mathf.Atan2(agents[i].direction.y, agents[i].direction.x);
+    //     }
+    //     agentsBuffer = new ComputeBuffer(numOfAgentsInt, AgentV1.Size);
+    // }
+
     public void ResetAgents()
     {
         // set up a few agents to simulate
