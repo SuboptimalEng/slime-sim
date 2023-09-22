@@ -1216,8 +1216,8 @@ MonoBehaviour:
   computeShader: {fileID: 7200000, guid: 38c9724cf0ec94df397375dbb5e58c2e, type: 3}
   width: 1800
   height: 900
-  numOfAgents: 200000
-  distFromMapEdge: 20
+  numOfAgents: 500000
+  distFromMapEdge: 70
   speed: 80
   diffuseRate: 1
   trailDecayRate: 0.1
@@ -1508,7 +1508,7 @@ MonoBehaviour:
     m_NumColorKeys: 5
     m_NumAlphaKeys: 2
   randomizeSpeed: 1
-  randomizeTrail: 1
+  randomizeTrail: 0
   randomizeSensors: 1
   resetAgents: 0
-  changeGradient: 0
+  changeGradient: 1
