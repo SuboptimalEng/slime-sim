@@ -3,7 +3,9 @@
 Simulating slime.
 
 - YouTube Video: [Coding a Slime Mold Simulation](https://www.youtube.com/watch?v=BKcxJlvqNWs)
+
   <img src="/_thumbnails/1.png">
+
   <img src="/_thumbnails/2.png">
 
 ## Resources
