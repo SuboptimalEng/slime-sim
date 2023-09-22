@@ -5,9 +5,9 @@ Simulating slime.
 ## Resources
 
 - [Jeff Jones' Physarum Research Paper](https://uwe-repository.worktribe.com/output/980579)
-- [Sebastian Lague's Slime Simulation](https://github.com/SebLague/Slime-Simulation)
-- [Simulife Hub's Slime Mold Simulation](https://www.youtube.com/watch?v=qryINYcgO1s)
-- [Sage Jenson's Physarum Simulation](https://cargocollective.com/sagejenson/physarum)
+- [Sebastian Lague's Slime Simulation Code](https://github.com/SebLague/Slime-Simulation)
+- [Simulife Hub's Slime Mold Simulation Video](https://www.youtube.com/watch?v=qryINYcgO1s)
+- [Sage Jenson's Physarum Simulation Article](https://cargocollective.com/sagejenson/physarum)
 
 ## License
 
