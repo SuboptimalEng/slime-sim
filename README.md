@@ -6,6 +6,8 @@ Simulating slime.
 
   <img src="/_thumbnails/2.png">
 
+  <img src="/_thumbnails/5.png">
+
 ## Resources
 
 - [Jeff Jones' Physarum Research Paper](https://uwe-repository.worktribe.com/output/980579)
