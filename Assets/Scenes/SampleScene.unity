@@ -142,7 +142,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &98683592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -156,25 +156,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 38c9724cf0ec94df397375dbb5e58c2e, type: 3}
-  width: 1000
-  height: 1000
+  width: 1024
+  height: 1024
   numOfAgents: 40352
   distFromMapEdge: 10
-  speed: 96
-  diffuseRate: 1.5
+  speed: 64
+  diffuseRate: 1
   trailDecayRate: 0.1
   diffuseDecayRate: 0.1
-  sensorOffset: 20
-  sensorAngle: 75
-  rotationAngle: 75
+  sensorOffset: 50
+  sensorAngle: 45
+  rotationAngle: 45
   gradient:
     serializedVersion: 2
-    key0: {r: 0.03753448, g: 0.007699232, b: 0.036879957, a: 1}
-    key1: {r: 0.7877475, g: 0.4826858, b: 0.7720844, a: 1}
-    key2: {r: 0.0065500746, g: 0.00312124, b: 0.0063721477, a: 0}
-    key3: {r: 0.13388912, g: 0.53189725, b: 0.054318067, a: 0}
-    key4: {r: 0.55549383, g: 0.704469, b: 0.28645697, a: 0}
-    key5: {r: 0, g: 0, b: 0, a: 0}
+    key0: {r: 0.002822219, g: 0.6750446, b: 0.15651134, a: 1}
+    key1: {r: 0.0069389017, g: 0.052047774, b: 0.08754016, a: 1}
+    key2: {r: 0.18337812, g: 0.005260109, b: 0.058299586, a: 0}
+    key3: {r: 0.5603894, g: 0.18046086, b: 0.88326025, a: 0}
+    key4: {r: 0.6918681, g: 0.8548677, b: 0.64662904, a: 0}
+    key5: {r: 0.9984361, g: 0.6500017, b: 0.110215396, a: 0}
     key6: {r: 0, g: 0, b: 0, a: 0}
     key7: {r: 0, g: 0, b: 0, a: 0}
     ctime0: 6554
@@ -182,7 +182,7 @@ MonoBehaviour:
     ctime2: 32768
     ctime3: 45875
     ctime4: 58982
-    ctime5: 0
+    ctime5: 65535
     ctime6: 0
     ctime7: 0
     atime0: 0
@@ -449,7 +449,7 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 5
     m_NumAlphaKeys: 2
-  randomizeSpeed: 1
+  randomizeSpeed: 0
   randomizeTrail: 1
   randomizeSensors: 1
   resetAgents: 0
@@ -857,13 +857,13 @@ MonoBehaviour:
   trailDecayRate: 0.2
   diffuseDecayRate: 0.2
   speciesSettingsList:
-  - sensorOffset: 16
-    sensorAngle: 45
-    rotationAngle: 45
+  - sensorOffset: 38
+    sensorAngle: 35
+    rotationAngle: 132
     color: {r: 0.0778437, g: 0.5566038, b: 0, a: 0}
-  - sensorOffset: 32
-    sensorAngle: 140
-    rotationAngle: 140
+  - sensorOffset: 46
+    sensorAngle: 153
+    rotationAngle: 91
     color: {r: 1, g: 0, b: 0, a: 0}
 --- !u!64 &1325854451
 MeshCollider:
@@ -1121,7 +1121,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!64 &2131114177
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1217,7 +1217,7 @@ MonoBehaviour:
   width: 1800
   height: 900
   numOfAgents: 200000
-  distFromMapEdge: 80
+  distFromMapEdge: 20
   speed: 80
   diffuseRate: 1
   trailDecayRate: 0.1
