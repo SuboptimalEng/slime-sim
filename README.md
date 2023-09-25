@@ -12,7 +12,6 @@ Simulating slime.
 
 - completed:
   - slime agents in compute shader
-  - writing result to result texture
   - sample color from gradient texture
   - smooth transition between gradients
   - randomize agent settings automatically
