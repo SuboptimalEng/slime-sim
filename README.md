@@ -8,6 +8,24 @@ Simulating slime.
 
   <img src="/_thumbnails/5.png">
 
+## Notes
+
+- completed:
+  - slime agents in compute shader
+  - writing result to result texture
+  - sample color from gradient texture
+  - smooth transition between gradients
+  - randomize agent settings automatically
+  - sense function with three directions
+  - trail + (diffuse + color map pass)
+  - create slime species with masks
+- research:
+  - gradient for each slime species
+  - custom sense functions like:
+    - force direction
+    - wobble direction
+    - mouse interaction
+
 ## Resources
 
 - [Jeff Jones' Physarum Research Paper](https://uwe-repository.worktribe.com/output/980579)
