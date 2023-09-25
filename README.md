@@ -25,6 +25,7 @@ Simulating slime.
     - force direction
     - wobble direction
     - mouse interaction
+    - run agents on image
 
 ## Resources
 
