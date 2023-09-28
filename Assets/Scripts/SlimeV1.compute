@@ -77,30 +77,17 @@ void CSPositionMap(uint3 id : SV_DispatchThreadID) {
     float2 agentDirection = radiansToDirection(AgentsBuffer[id.x].angleInRadians);
     float2 pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
 
-    // note: old method using direction
-    // float2 pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
-
     uint2 dimensions;
     PositionTexture.GetDimensions(dimensions.x, dimensions.y);
     float maxX = dimensions.x / 2;
     float maxY = dimensions.y / 2;
 
     if (pos.x < -maxX + distFromMapEdge || pos.x > maxX - distFromMapEdge) {
-        // note: this method works, but it requires more operations later in the algorithm
-        // AgentsBuffer[id.x].direction.x *= -1;
-        // pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
-
-        // note: this is another approach with angle in radians
         agentDirection.x *= -1;
         AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
         pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;
     }
     if (pos.y < -maxY + distFromMapEdge || pos.y > maxY - distFromMapEdge) {
-        // note: this method works, but it requires more operations later in the algorithm
-        // AgentsBuffer[id.x].direction.y *= -1;
-        // pos = AgentsBuffer[id.x].position + speed * AgentsBuffer[id.x].direction * deltaTime;
-
-        // note: this is another approach with angle in radians
         agentDirection.y *= -1;
         AgentsBuffer[id.x].angleInRadians = atan2(agentDirection.y, agentDirection.x);
         pos = AgentsBuffer[id.x].position + speed * agentDirection * deltaTime;

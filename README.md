@@ -18,6 +18,7 @@ Simulating slime.
   - sense function with three directions
   - trail + (diffuse + color map pass)
   - create slime species with masks
+  - learn more about hlsl shaders
 - research:
   - gradient for each slime species
   - custom sense functions like:
